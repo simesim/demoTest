@@ -42,59 +42,68 @@
     </style>
 </head>
 
-<body class="max-w-6xl mx-auto p-6">
+<body class="max-w-6xl mx-auto p-4 sm:p-6">
 
     <div class="header rounded-3xl p-6 mb-8 text-center shadow-2xl">
-        <h1 class="text-5xl font-bold text-[#00fa9a]">Тренажёр Демикаа</h1>
-        <p class="text-[#7fff00] text-xl mt-2">Мы сможем, я уверенна!</p>
+        <h1 class="text-4xl sm:text-5xl font-bold text-[#00fa9a]">Тренажёр Демикаа</h1>
+        <p class="text-[#7fff00] text-lg sm:text-xl mt-2">Мы сможем, я уверенна!</p>
     </div>
 
+    <!-- Выбор файла -->
     <div class="mb-8">
         <label class="block text-xl font-semibold mb-3 text-[#7fff00]">Выбери файл для тренировки:</label>
         <select id="fileSelect"
             class="w-full p-5 text-lg rounded-2xl shadow-inner focus:outline-none focus:ring-4 focus:ring-[#00fa9a]"></select>
     </div>
 
-    <div class="flex bg-[#1e2937] rounded-3xl p-1 mb-8 shadow-xl">
-        <button onclick="showTab(0)" id="tab0-btn" class="tab tab-active flex-1 py-5 text-xl rounded-3xl mx-1">1. Код +
-            Пояснение</button>
-        <button onclick="showTab(1)" id="tab1-btn" class="tab flex-1 py-5 text-xl rounded-3xl mx-1">2. Тест (20
-            вопросов)</button>
-        <button onclick="showTab(2)" id="tab2-btn" class="tab flex-1 py-5 text-xl rounded-3xl mx-1">3. Код с
-            комментариями</button>
-        <button onclick="showTab(3)" id="tab3-btn" class="tab flex-1 py-5 text-xl rounded-3xl mx-1">4. Игра «Заполни
-            пропуски»</button>
+    <!-- Вкладки (адаптив) -->
+    <div class="flex flex-wrap bg-[#1e2937] rounded-3xl p-1 mb-8 shadow-xl gap-1">
+        <button onclick="showTab(0)" id="tab0-btn"
+            class="tab tab-active flex-1 py-4 px-2 sm:py-5 text-base sm:text-xl rounded-3xl">1. Код + Пояснение</button>
+        <button onclick="showTab(1)" id="tab1-btn"
+            class="tab flex-1 py-4 px-2 sm:py-5 text-base sm:text-xl rounded-3xl">2. Тест (20 вопросов)</button>
+        <button onclick="showTab(2)" id="tab2-btn"
+            class="tab flex-1 py-4 px-2 sm:py-5 text-base sm:text-xl rounded-3xl">3. Код с комментариями</button>
+        <button onclick="showTab(3)" id="tab3-btn"
+            class="tab flex-1 py-4 px-2 sm:py-5 text-base sm:text-xl rounded-3xl">4. Игра «Заполни пропуски»</button>
     </div>
 
-    <div id="tab0" class="tab-content bg-[#1e2937] p-8 rounded-3xl shadow-2xl">
-        <h2 id="title" class="text-3xl font-bold text-[#00fa9a] mb-6"></h2>
-        <div id="explanation" class="text-[#e2e8f0] text-xl mb-8"></div>
-        <pre id="originalCode" class="code p-8 rounded-2xl text-base overflow-auto text-[#a5f3fc]"></pre>
+    <!-- Вкладка 1 -->
+    <div id="tab0" class="tab-content bg-[#1e2937] p-6 sm:p-8 rounded-3xl shadow-2xl">
+        <h2 id="title" class="text-2xl sm:text-3xl font-bold text-[#00fa9a] mb-6"></h2>
+        <div id="explanation" class="text-[#e2e8f0] text-lg sm:text-xl mb-8"></div>
+        <pre id="originalCode"
+            class="code p-6 sm:p-8 rounded-2xl text-sm sm:text-base overflow-auto text-[#a5f3fc]"></pre>
     </div>
 
-    <div id="tab1" class="tab-content hidden bg-[#1e2937] p-8 rounded-3xl shadow-2xl">
-        <h2 class="text-3xl font-bold text-[#00fa9a] mb-8">Тест по коду — 20 вопросов</h2>
+    <!-- Вкладка 2: Тест -->
+    <div id="tab1" class="tab-content hidden bg-[#1e2937] p-6 sm:p-8 rounded-3xl shadow-2xl">
+        <h2 class="text-2xl sm:text-3xl font-bold text-[#00fa9a] mb-8">Тест по коду — 20 вопросов</h2>
         <div id="quizContainer" class="space-y-8"></div>
         <button onclick="checkQuiz()"
-            class="mt-10 bg-[#00fa9a] hover:bg-[#7fff00] text-[#0f172a] px-12 py-5 rounded-3xl text-xl font-bold">Проверить
+            class="mt-10 w-full sm:w-auto bg-[#00fa9a] hover:bg-[#7fff00] text-[#0f172a] px-12 py-5 rounded-3xl text-xl font-bold">Проверить
             ответы</button>
     </div>
 
-    <div id="tab2" class="tab-content hidden bg-[#1e2937] p-8 rounded-3xl shadow-2xl">
-        <h2 class="text-3xl font-bold text-[#00fa9a] mb-6">Код с подробными комментариями</h2>
-        <pre id="commentedCode" class="code p-8 rounded-2xl text-base overflow-auto text-[#a5f3fc]"></pre>
+    <!-- Вкладка 3: Код с комментариями -->
+    <div id="tab2" class="tab-content hidden bg-[#1e2937] p-6 sm:p-8 rounded-3xl shadow-2xl">
+        <h2 class="text-2xl sm:text-3xl font-bold text-[#00fa9a] mb-6">Код с подробными комментариями</h2>
+        <pre id="commentedCode"
+            class="code p-6 sm:p-8 rounded-2xl text-sm sm:text-base overflow-auto text-[#a5f3fc]"></pre>
     </div>
 
-    <div id="tab3" class="tab-content hidden bg-[#1e2937] p-8 rounded-3xl shadow-2xl">
-        <h2 class="text-3xl font-bold text-[#00fa9a] mb-6">Игра «Заполни пропуски»</h2>
-        <div class="flex gap-4">
+    <!-- Вкладка 4: Игра -->
+    <div id="tab3" class="tab-content hidden bg-[#1e2937] p-6 sm:p-8 rounded-3xl shadow-2xl">
+        <h2 class="text-2xl sm:text-3xl font-bold text-[#00fa9a] mb-6">Игра «Заполни пропуски»</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
             <button onclick="startGame()"
-                class="bg-[#00fa9a] hover:bg-[#7fff00] text-[#0f172a] px-10 py-4 rounded-2xl text-xl font-bold">Начать
+                class="bg-[#00fa9a] hover:bg-[#7fff00] text-[#0f172a] px-10 py-4 rounded-2xl text-xl font-bold flex-1">Начать
                 новую игру</button>
             <button onclick="checkGame()"
-                class="bg-[#22d3ee] hover:bg-[#67e8f9] text-[#0f172a] px-10 py-4 rounded-2xl text-xl font-bold">Проверить</button>
+                class="bg-[#22d3ee] hover:bg-[#67e8f9] text-[#0f172a] px-10 py-4 rounded-2xl text-xl font-bold flex-1">Проверить</button>
         </div>
-        <pre id="gameCode" class="code p-8 rounded-2xl mt-8 text-base overflow-auto text-[#a5f3fc]"></pre>
+        <pre id="gameCode"
+            class="code p-6 sm:p-8 rounded-2xl mt-8 text-sm sm:text-base overflow-auto text-[#a5f3fc]"></pre>
         <div id="gameInputs" class="mt-8"></div>
     </div>
 
