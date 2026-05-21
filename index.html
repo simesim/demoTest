@@ -1,141 +1,484 @@
 <!DOCTYPE html>
 <html lang="ru">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Обувь Тренажёр — C# WinForms</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Times+New+Roman:wght@400;700&display=swap');
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ObuvApp — Шпаргалка</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Unbounded:wght@400;700;900&display=swap');
 
-        body {
-            font-family: 'Times New Roman', serif;
-            background: linear-gradient(135deg, #0f172a, #1e2937);
-            color: #e2e8f0;
-            min-height: 100vh;
-        }
+  :root {
+    --bg: #0d0f14;
+    --surface: #161a24;
+    --surface2: #1e2433;
+    --border: #2a3045;
+    --accent: #7fff00;
+    --accent2: #00fa9a;
+    --accent3: #4af0ff;
+    --text: #e8ecf5;
+    --muted: #6b7690;
+    --danger: #ff4f6b;
+    --warn: #ffb84f;
+    --code-bg: #111520;
+    --radius: 12px;
+  }
 
-        .header {
-            background: #1e2937;
-            border-bottom: 4px solid #00fa9a;
-        }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .tab-active {
-            background-color: #00fa9a;
-            color: #0f172a;
-            font-weight: bold;
-            border-bottom: 4px solid #7fff00;
-        }
+  body {
+    font-family: 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
 
-        .code {
-            font-family: 'Courier New', monospace;
-            background: #0f172a;
-            border: 2px solid #00fa9a;
-        }
+  /* ── HEADER ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .logo {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(14px, 3vw, 20px);
+    font-weight: 900;
+    color: var(--accent);
+    padding: 14px 0;
+    white-space: nowrap;
+  }
+  .logo span { color: var(--accent2); }
 
-        select {
-            background: #1e2937;
-            color: #e2e8f0;
-            border: 2px solid #00fa9a;
-        }
-    </style>
+  nav {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    padding: 8px 0;
+    flex: 1;
+  }
+  nav button {
+    background: none;
+    border: 1px solid transparent;
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(10px, 2vw, 12px);
+    padding: 5px 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+  nav button:hover { color: var(--text); border-color: var(--border); }
+  nav button.active { color: var(--accent); border-color: var(--accent); background: rgba(127,255,0,.08); }
+
+  /* ── MAIN ── */
+  main { padding: 20px; max-width: 1100px; margin: 0 auto; }
+
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── TABS inside section ── */
+  .tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: clamp(10px, 2.5vw, 12px);
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active { color: var(--accent2); border-color: var(--accent2); background: rgba(0,250,154,.07); }
+
+  /* ── CODE BLOCK ── */
+  .code-wrap {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .code-filename { font-size: 12px; color: var(--accent3); }
+  .copy-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+
+  pre {
+    padding: 16px;
+    overflow-x: auto;
+    font-size: clamp(11px, 2.5vw, 13px);
+    line-height: 1.7;
+    tab-size: 4;
+  }
+
+  /* syntax highlight */
+  .kw { color: #c792ea; }
+  .kw2 { color: #89ddff; }
+  .str { color: #c3e88d; }
+  .num { color: #f78c6c; }
+  .cmt { color: var(--muted); font-style: italic; }
+  .cls { color: #ffcb6b; }
+  .fn { color: #82aaff; }
+  .prop { color: var(--accent3); }
+  .op { color: var(--accent2); }
+
+  /* ── ANNOTATED code ── */
+  .ann-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 0;
+    font-size: clamp(11px, 2.5vw, 13px);
+    line-height: 1.7;
+    border-bottom: 1px solid transparent;
+    transition: background .1s;
+  }
+  .ann-line:hover { background: rgba(127,255,0,.04); border-color: rgba(127,255,0,.1); }
+  .ann-num {
+    min-width: 36px;
+    color: var(--muted);
+    text-align: right;
+    padding-right: 12px;
+    user-select: none;
+    font-size: 11px;
+    padding-top: 2px;
+    flex-shrink: 0;
+  }
+  .ann-code { flex: 1; white-space: pre-wrap; word-break: break-all; }
+  .ann-comment {
+    min-width: 200px;
+    max-width: 260px;
+    margin-left: 12px;
+    font-size: 10px;
+    color: var(--warn);
+    padding: 2px 8px;
+    border-left: 2px solid var(--warn);
+    background: rgba(255,184,79,.05);
+    border-radius: 0 4px 4px 0;
+    flex-shrink: 0;
+  }
+  @media(max-width:700px) {
+    .ann-line { flex-wrap: wrap; }
+    .ann-comment { min-width: 100%; max-width: 100%; margin-left: 36px; margin-top: 2px; }
+  }
+
+  /* ── GAME ── */
+  .game-controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .game-controls select {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 7px 12px;
+    border-radius: 6px;
+  }
+  .btn-primary {
+    background: var(--accent);
+    border: none;
+    color: #000;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn-primary:hover { opacity: .85; }
+  .btn-secondary {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 11px;
+    padding: 7px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .game-score {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    color: var(--accent2);
+  }
+
+  .game-area {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    font-size: clamp(11px, 2.5vw, 13px);
+    line-height: 1.8;
+  }
+  .game-line { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; }
+  .game-blank {
+    display: inline-block;
+    min-width: 120px;
+    background: rgba(127,255,0,.08);
+    border: 1.5px dashed var(--accent);
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: var(--accent);
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+    transition: background .15s;
+  }
+  .game-blank:focus { background: rgba(127,255,0,.15); }
+  .game-blank.correct { background: rgba(0,250,154,.15); border-color: var(--accent2); color: var(--accent2); }
+  .game-blank.wrong { background: rgba(255,79,107,.12); border-color: var(--danger); color: var(--danger); }
+
+  .game-result {
+    margin-top: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    display: none;
+  }
+  .game-result.show { display: block; }
+  .game-result.success { background: rgba(0,250,154,.1); border: 1px solid var(--accent2); color: var(--accent2); }
+  .game-result.fail { background: rgba(255,79,107,.1); border: 1px solid var(--danger); color: var(--danger); }
+
+  /* ── DB TABLE section ── */
+  .db-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+    gap: 14px;
+  }
+  .db-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color .2s;
+  }
+  .db-card:hover { border-color: var(--accent3); }
+  .db-card-header {
+    background: var(--surface2);
+    padding: 10px 14px;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 12px;
+    color: var(--accent3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .db-icon { font-size: 16px; }
+  .db-table { width: 100%; border-collapse: collapse; font-size: clamp(10px, 2.5vw, 12px); }
+  .db-table th {
+    background: rgba(74,240,255,.06);
+    padding: 6px 12px;
+    text-align: left;
+    color: var(--muted);
+    font-weight: 400;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .db-table td { padding: 6px 12px; border-top: 1px solid var(--border); }
+  .db-table tr:hover td { background: rgba(255,255,255,.02); }
+  .badge {
+    display: inline-block;
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-weight: 700;
+    margin-left: 4px;
+    vertical-align: middle;
+  }
+  .badge-pk { background: rgba(255,184,79,.2); color: var(--warn); }
+  .badge-fk { background: rgba(74,240,255,.2); color: var(--accent3); }
+  .badge-nn { background: rgba(127,255,0,.15); color: var(--accent); }
+  .badge-id { background: rgba(200,100,255,.2); color: #c792ea; }
+
+  .type-tag { color: var(--muted); font-size: 10px; }
+
+  /* DB flash quiz */
+  .flash-quiz { margin-top: 20px; }
+  .flash-question {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 12px;
+  }
+  .flash-q-text { font-size: 14px; color: var(--accent); margin-bottom: 14px; }
+  .flash-options { display: flex; flex-direction: column; gap: 8px; }
+  .flash-opt {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+    padding: 9px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    text-align: left;
+    transition: all .15s;
+  }
+  .flash-opt:hover { border-color: var(--accent2); }
+  .flash-opt.correct { border-color: var(--accent2); background: rgba(0,250,154,.1); color: var(--accent2); }
+  .flash-opt.wrong { border-color: var(--danger); background: rgba(255,79,107,.1); color: var(--danger); }
+  .flash-next {
+    display: none;
+    background: var(--accent2);
+    border: none;
+    color: #000;
+    font-family: 'Unbounded', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .flash-next.show { display: inline-block; }
+  .flash-score-bar {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  /* Section title */
+  .section-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: clamp(16px, 4vw, 22px);
+    font-weight: 900;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .section-sub {
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 20px;
+  }
+
+  .notice {
+    background: rgba(127,255,0,.06);
+    border: 1px solid rgba(127,255,0,.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 11px;
+    color: var(--accent);
+    margin-bottom: 16px;
+  }
+</style>
 </head>
+<body>
 
-<body class="max-w-6xl mx-auto p-4 sm:p-6">
+<header>
+  <div class="logo">Obuv<span>App</span></div>
+  <nav>
+    <button class="active" onclick="showSection('code')">📄 Код</button>
+    <button onclick="showSection('annotated')">💬 С пояснениями</button>
+    <button onclick="showSection('game')">🎮 Игра</button>
+    <button onclick="showSection('db')">🗄️ Таблицы БД</button>
+  </nav>
+</header>
 
-    <div class="header rounded-3xl p-6 mb-8 text-center shadow-2xl">
-        <h1 class="text-4xl sm:text-5xl font-bold text-[#00fa9a]">Тренажёр Демикаа</h1>
-        <p class="text-[#7fff00] text-lg sm:text-xl mt-2">Мы сможем, я уверенна!</p>
+<main>
+
+<!-- ════════════ CODE ════════════ -->
+<div class="section active" id="sec-code">
+  <div class="section-title">Исходный код</div>
+  <div class="section-sub">Полный код каждого файла — можно скопировать и повторить</div>
+  <div class="tabs" id="code-tabs"></div>
+  <div id="code-content"></div>
+</div>
+
+<!-- ════════════ ANNOTATED ════════════ -->
+<div class="section" id="sec-annotated">
+  <div class="section-title">Код с пояснениями</div>
+  <div class="section-sub">Каждая строка объяснена — наведи или посмотри справа</div>
+  <div class="tabs" id="ann-tabs"></div>
+  <div id="ann-content"></div>
+</div>
+
+<!-- ════════════ GAME ════════════ -->
+<div class="section" id="sec-game">
+  <div class="section-title">Игра: восстанови код</div>
+  <div class="section-sub">Пропущены случайные куски — введи правильный текст</div>
+  <div class="game-controls">
+    <select id="game-file-sel"></select>
+    <select id="game-diff">
+      <option value="3">Лёгкий (3 пропуска)</option>
+      <option value="6" selected>Средний (6 пропусков)</option>
+      <option value="10">Сложный (10 пропусков)</option>
+    </select>
+    <button class="btn-primary" onclick="startGame()">▶ Старт</button>
+    <button class="btn-secondary" onclick="checkGame()">✓ Проверить</button>
+    <div class="game-score" id="game-score"></div>
+  </div>
+  <div class="game-area" id="game-area"><span style="color:var(--muted)">Выбери файл и нажми Старт</span></div>
+  <div class="game-result" id="game-result"></div>
+</div>
+
+<!-- ════════════ DB ════════════ -->
+<div class="section" id="sec-db">
+  <div class="section-title">Таблицы базы данных</div>
+  <div class="section-sub">Структура ObuvDB — все 11 таблиц с типами и ключами</div>
+  <div class="db-grid" id="db-grid"></div>
+
+  <div class="flash-quiz" id="db-quiz">
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+      <div class="section-title" style="font-size:16px;margin:0">🧠 Викторина по столбцам</div>
+      <button class="btn-primary" onclick="startFlash()">Новый вопрос</button>
+      <div class="flash-score-bar" id="flash-score">Счёт: 0 / 0</div>
     </div>
+    <div id="flash-area"></div>
+  </div>
+</div>
 
-    <!-- Выбор файла -->
-    <div class="mb-8">
-        <label class="block text-xl font-semibold mb-3 text-[#7fff00]">Выбери файл для тренировки:</label>
-        <select id="fileSelect"
-            class="w-full p-5 text-lg rounded-2xl shadow-inner focus:outline-none focus:ring-4 focus:ring-[#00fa9a]"></select>
-    </div>
+</main>
 
-    <!-- Вкладки (адаптив) -->
-    <div class="flex flex-wrap bg-[#1e2937] rounded-3xl p-1 mb-8 shadow-xl gap-1">
-        <button onclick="showTab(0)" id="tab0-btn"
-            class="tab tab-active flex-1 py-4 px-2 sm:py-5 text-base sm:text-xl rounded-3xl">1. Код + Пояснение</button>
-        <button onclick="showTab(1)" id="tab1-btn"
-            class="tab flex-1 py-4 px-2 sm:py-5 text-base sm:text-xl rounded-3xl">2. Тест (20 вопросов)</button>
-        <button onclick="showTab(2)" id="tab2-btn"
-            class="tab flex-1 py-4 px-2 sm:py-5 text-base sm:text-xl rounded-3xl">3. Код с комментариями</button>
-        <button onclick="showTab(3)" id="tab3-btn"
-            class="tab flex-1 py-4 px-2 sm:py-5 text-base sm:text-xl rounded-3xl">4. Игра «Заполни пропуски»</button>
-    </div>
+<script>
+// ════════════════════════════════════════════════════
+//  DATA
+// ════════════════════════════════════════════════════
 
-    <!-- Вкладка 1 -->
-    <div id="tab0" class="tab-content bg-[#1e2937] p-6 sm:p-8 rounded-3xl shadow-2xl">
-        <h2 id="title" class="text-2xl sm:text-3xl font-bold text-[#00fa9a] mb-6"></h2>
-        <div id="explanation" class="text-[#e2e8f0] text-lg sm:text-xl mb-8"></div>
-        <pre id="originalCode"
-            class="code p-6 sm:p-8 rounded-2xl text-sm sm:text-base overflow-auto text-[#a5f3fc]"></pre>
-    </div>
-
-    <!-- Вкладка 2: Тест -->
-    <div id="tab1" class="tab-content hidden bg-[#1e2937] p-6 sm:p-8 rounded-3xl shadow-2xl">
-        <h2 class="text-2xl sm:text-3xl font-bold text-[#00fa9a] mb-8">Тест по коду — 20 вопросов</h2>
-        <div id="quizContainer" class="space-y-8"></div>
-        <button onclick="checkQuiz()"
-            class="mt-10 w-full sm:w-auto bg-[#00fa9a] hover:bg-[#7fff00] text-[#0f172a] px-12 py-5 rounded-3xl text-xl font-bold">Проверить
-            ответы</button>
-    </div>
-
-    <!-- Вкладка 3: Код с комментариями -->
-    <div id="tab2" class="tab-content hidden bg-[#1e2937] p-6 sm:p-8 rounded-3xl shadow-2xl">
-        <h2 class="text-2xl sm:text-3xl font-bold text-[#00fa9a] mb-6">Код с подробными комментариями</h2>
-        <pre id="commentedCode"
-            class="code p-6 sm:p-8 rounded-2xl text-sm sm:text-base overflow-auto text-[#a5f3fc]"></pre>
-    </div>
-
-    <!-- Вкладка 4: Игра -->
-    <div id="tab3" class="tab-content hidden bg-[#1e2937] p-6 sm:p-8 rounded-3xl shadow-2xl">
-        <h2 class="text-2xl sm:text-3xl font-bold text-[#00fa9a] mb-6">Игра «Заполни пропуски»</h2>
-        <div class="flex flex-col sm:flex-row gap-4">
-            <button onclick="startGame()"
-                class="bg-[#00fa9a] hover:bg-[#7fff00] text-[#0f172a] px-10 py-4 rounded-2xl text-xl font-bold flex-1">Начать
-                новую игру</button>
-            <button onclick="checkGame()"
-                class="bg-[#22d3ee] hover:bg-[#67e8f9] text-[#0f172a] px-10 py-4 rounded-2xl text-xl font-bold flex-1">Проверить</button>
-        </div>
-        <pre id="gameCode"
-            class="code p-6 sm:p-8 rounded-2xl mt-8 text-sm sm:text-base overflow-auto text-[#a5f3fc]"></pre>
-        <div id="gameInputs" class="mt-8"></div>
-    </div>
-
-    <script>
-        // ====================== 1. ВСЕ 9 ФАЙЛОВ ======================
-        const codes = [
-            {
-                name: "Program.cs",
-                explanation: "Главная точка входа приложения. Запускает форму Login.",
-                questions: [
-                    { q: "Какой атрибут стоит перед методом Main?", options: ["[STAThread]", "[Thread]", "[MainThread]", "[EntryPoint]"], correct: 0 },
-                    { q: "Какой метод запускает главное окно приложения?", options: ["Application.Run", "Application.Start", "Form.Show", "Program.Run"], correct: 0 },
-                    { q: "Что делает Application.EnableVisualStyles()?", options: ["Включает стандартные стили Windows", "Включает тёмную тему", "Включает анимации", "Включает звук"], correct: 0 },
-                    { q: "Какой метод устанавливает совместимость рендеринга текста?", options: ["SetCompatibleTextRenderingDefault", "SetTextRendering", "EnableTextRendering", "SetRendering"], correct: 0 },
-                    { q: "Какой тип проекта используется?", options: ["Windows Forms App", "Console App", "WPF App", "Web App"], correct: 0 },
-                    { q: "Что означает [STAThread]?", options: ["Однопоточная модель апартамента", "Многопоточная модель", "Сетевой режим", "Графический режим"], correct: 0 },
-                    { q: "Какой метод является точкой входа в C# приложение?", options: ["Main", "Start", "Run", "Init"], correct: 0 },
-                    { q: "В каком пространстве имён находится класс Program?", options: ["ObuvApp", "System", "Windows.Forms", "Application"], correct: 0 },
-                    { q: "Какой метод запускает форму Login?", options: ["Application.Run(new Login())", "new Login().Show()", "Login.Run()", "ShowLogin()"], correct: 0 },
-                    { q: "Какой using используется для Windows Forms?", options: ["using System.Windows.Forms;", "using System.WinForms;", "using Forms;", "using WinForms;"], correct: 0 },
-                    { q: "Что делает Application.Run?", options: ["Запускает приложение и показывает главную форму", "Закрывает приложение", "Создаёт форму", "Загружает данные"], correct: 0 },
-                    { q: "Почему в Main используется [STAThread]?", options: ["Для корректной работы COM и WinForms", "Для многопоточности", "Для сети", "Для графики"], correct: 0 },
-                    { q: "Какой метод скрыт в Program.cs?", options: ["Main", "Run", "Start", "Init"], correct: 0 },
-                    { q: "Что запускает приложение в этом проекте?", options: ["new Login()", "new MainForm()", "new Form()", "Application.Start()"], correct: 0 },
-                    { q: "Какой класс отвечает за запуск приложения?", options: ["Program", "Application", "Form", "Login"], correct: 0 },
-                    { q: "Что делает SetCompatibleTextRenderingDefault(false)?", options: ["Включает современный рендеринг текста", "Отключает стили", "Включает старый рендеринг", "Ничего"], correct: 0 },
-                    { q: "Какой параметр передаётся в Application.Run?", options: ["new Login()", "new MainForm()", "this", "null"], correct: 0 },
-                    { q: "Для чего нужен STAThread в WinForms?", options: ["Для корректной работы с UI", "Для производительности", "Для сети", "Для базы данных"], correct: 0 },
-                    { q: "Какой метод вызывается автоматически при запуске программы?", options: ["Main", "Load", "Start", "Init"], correct: 0 },
-                    { q: "Что происходит, если убрать Application.EnableVisualStyles()?", options: ["Стили Windows не применятся", "Приложение не запустится", "Форма не отобразится", "Ошибка компиляции"], correct: 0 }
-                ],
-                code: `using System;
+const FILES = [
+  {
+    name: "Program.cs",
+    code: `using System;
 using System.Windows.Forms;
 
 namespace ObuvApp
@@ -151,41 +494,31 @@ namespace ObuvApp
         }
     }
 }`,
-                commented: ``
-            },
-            {
-                name: "Login.cs",
-                explanation: "Форма авторизации. Проверяет логин/пароль или позволяет войти гостем.",
-                questions: [
-                    { q: "Какой метод очищает поле пароля?", options: ["tbPass.Clear()", "tbPass.Text = ''", "tbPass.Reset()", "ClearPassword()"], correct: 0 },
-                    { q: "Какой запрос проверяет логин и пароль?", options: ["GetDataByLogPass", "CheckUser", "ValidateLogin", "GetUser"], correct: 0 },
-                    { q: "Что происходит при нажатии кнопки 'Гость'?", options: ["OpenMain('Гость', 'Гость')", "MessageBox", "Close()", "ShowMainForm()"], correct: 0 },
-                    { q: "Какой метод скрывает форму Login?", options: ["Hide()", "Close()", "Visible = false", "Dispose()"], correct: 0 },
-                    { q: "Какой обработчик используется для возврата на Login?", options: ["FormClosed", "FormClosing", "Load", "Shown"], correct: 0 },
-                    { q: "Что передаётся в MainForm при успешном входе?", options: ["FullName и RoleName", "Login и Password", "UserId", "Только RoleName"], correct: 0 },
-                    { q: "Какой TextBox имеет UseSystemPasswordChar?", options: ["tbPass", "tbLogin", "tbPassword", "tbUser"], correct: 0 },
-                    { q: "Какой метод открывает главную форму?", options: ["OpenMain", "ShowMain", "OpenForm", "LoadMain"], correct: 0 },
-                    { q: "Что делает Login_Load?", options: ["Загружает таблицу Users", "Проверяет пароль", "Открывает MainForm", "Очищает поля"], correct: 0 },
-                    { q: "Какой метод вызывается при успешной авторизации?", options: ["OpenMain", "LoginSuccess", "Authorize", "Validate"], correct: 0 },
-                    { q: "Что показывает MessageBox при неверном пароле?", options: ["Неверный логин или пароль", "Ошибка входа", "Access Denied", "Wrong Credentials"], correct: 0 },
-                    { q: "Какой параметр передаётся в FormClosed?", options: ["tbPass.Clear()", "tbPass.Text = ''", "ClearFields()", "ResetForm()"], correct: 0 },
-                    { q: "Какой адаптер используется для проверки пользователя?", options: ["usersTableAdapter", "loginTableAdapter", "userAdapter", "authAdapter"], correct: 0 },
-                    { q: "Что возвращает GetDataByLogPass при успехе?", options: ["DataTable с одной строкой", "bool", "string", "int"], correct: 0 },
-                    { q: "Какой метод вызывается при нажатии btnEnter?", options: ["btnEnter_Click", "EnterClick", "LoginClick", "ValidateClick"], correct: 0 },
-                    { q: "Что делает btnGuest_Click?", options: ["Открывает MainForm в режиме гостя", "Закрывает форму", "Показывает ошибку", "Загружает данные"], correct: 0 },
-                    { q: "Какой событие используется для очистки поля пароля?", options: ["FormClosed", "FormClosing", "Load", "Shown"], correct: 0 },
-                    { q: "Какой класс наследует форма Login?", options: ["Form", "UserControl", "Panel", "Window"], correct: 0 },
-                    { q: "Что передаётся в OpenMain?", options: ["fullName и roleName", "login и password", "userId", "role"], correct: 0 },
-                    { q: "Какой метод заполняет DataSet при загрузке формы?", options: ["usersTableAdapter.Fill", "FillUsers", "LoadUsers", "GetUsers"], correct: 0 }
-                ],
-                code: `using System;
+    annotations: [
+      [1,'using System;','Подключаем базовые классы .NET'],
+      [2,'using System.Windows.Forms;','Для WinForms: Form, Application и т.д.'],
+      [4,'namespace ObuvApp','Пространство имён — группирует классы проекта'],
+      [6,'internal static class Program','Главный класс-точка входа, static = без экземпляра'],
+      [8,'[STAThread]','Атрибут: GUI должен работать в однопоточной модели COM'],
+      [9,'static void Main()','Точка входа в приложение — запускается первой'],
+      [11,'Application.EnableVisualStyles();','Включает современный внешний вид кнопок/элементов'],
+      [12,'Application.SetCompatibleTextRenderingDefault(false);','Использовать GDI+ рендеринг текста'],
+      [13,'Application.Run(new Login());','Запустить приложение — ПЕРВАЯ форма это Login'],
+    ]
+  },
+  {
+    name: "Login.cs",
+    code: `using System;
 using System.Windows.Forms;
 
 namespace ObuvApp
 {
     public partial class Login : Form
     {
-        public Login() => InitializeComponent();
+        public Login()
+        {
+            InitializeComponent();
+        }
 
         private void Login_Load(object sender, EventArgs e)
         {
@@ -200,7 +533,8 @@ namespace ObuvApp
 
                 if (dt.Count == 0)
                 {
-                    MessageBox.Show("Неверный логин или пароль", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Неверный логин или пароль", "Ошибка",
+                        MessageBoxButtons.OK, MessageBoxIcon.Error);
                     return;
                 }
 
@@ -208,7 +542,8 @@ namespace ObuvApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка подключения:\n" + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ошибка подключения:\\n" + ex.Message, "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -221,55 +556,29 @@ namespace ObuvApp
         {
             MainForm mf = new MainForm(fullName, roleName);
             Hide();
-            mf.FormClosed += (s, e) => { tbPass.Clear(); Show(); };
+            mf.FormClosed += (s, e) => { tbPass.Text = ""; Show(); };
             mf.Show();
         }
     }
 }`,
-                commented: `using System;                    // Подключаем пространство имён System (нужно для базовых классов)
-using System.Windows.Forms;      // Подключаем пространство имён для работы с Windows Forms
-
-namespace ObuvApp                 // Название пространства имён нашего проекта
-{
-    internal static class Program   // Статический класс Program — стандартный для WinForms приложений
-    {
-        [STAThread]                 // Важный атрибут: указывает, что поток использует однопоточную модель апартамента (обязательно для WinForms)
-        static void Main()          // Главная точка входа всего приложения
-        {
-            Application.EnableVisualStyles();                    // Включает современные визуальные стили Windows (кнопки, окна и т.д. выглядят красиво)
-            Application.SetCompatibleTextRenderingDefault(false); // Включает современный способ отрисовки текста (лучше выглядит)
-            
-            Application.Run(new Login());                        // Запускает приложение и показывает первую форму — Login
-        }
-    }
-}`
-            },
-            {
-                name: "MainForm.cs",
-                explanation: "Главная форма. Переключает между товарами и заказами.",
-                questions: [
-                    { q: "Какой DockStyle у рабочей панели DownPanel?", options: ["Fill", "Top", "Bottom", "Left"], correct: 0 },
-                    { q: "Когда кнопка 'Заказы' становится видимой?", options: ["roleName == 'Менеджер' || roleName == 'Администратор'", "roleName == 'Администратор'", "roleName == 'Гость'", "Всегда"], correct: 0 },
-                    { q: "Какой метод переключает содержимое?", options: ["ShowPage", "SwitchPage", "ChangePanel", "LoadPage"], correct: 0 },
-                    { q: "Что делает btnBack_Click?", options: ["ShowPage(ucProducts, false)", "Close()", "Hide()", "ShowOrders()"], correct: 0 },
-                    { q: "Какой цвет у верхней панели TopPanel?", options: ["#00FA9A", "#7FFF00", "#FFFFFF", "#000000"], correct: 0 },
-                    { q: "Что сохраняется как readonly в конструкторе?", options: ["fullName и roleName", "ucProducts", "ucOrders", "DownPanel"], correct: 0 },
-                    { q: "Какой UserControl показывается по умолчанию?", options: ["ucProducts", "ucOrders", "MainPanel", "Login"], correct: 0 },
-                    { q: "Что делает btnExit_Click?", options: ["Close()", "Hide()", "Dispose()", "Exit()"], correct: 0 },
-                    { q: "Какой метод создаёт OrderList при первом нажатии?", options: ["if (ucOrders == null)", "ucOrders = new OrderList()", "CreateOrderList()", "LoadOrders()"], correct: 0 },
-                    { q: "Что передаётся в ProductList?", options: ["roleName", "fullName", "userId", "nothing"], correct: 0 },
-                    { q: "Какой Anchor у lblUsername?", options: ["Top | Right", "Top | Left", "Bottom | Right", "Fill"], correct: 0 },
-                    { q: "Что делает метод ShowPage?", options: ["Очищает DownPanel и добавляет новый UserControl", "Показывает новую форму", "Скрывает панель", "Обновляет данные"], correct: 0 },
-                    { q: "Когда btnBack становится видимой?", options: ["canBack = true", "roleName == 'Администратор'", "Always", "Never"], correct: 0 },
-                    { q: "Какой метод вызывается при загрузке MainForm?", options: ["MainForm_Load", "Load", "Shown", "Activated"], correct: 0 },
-                    { q: "Какой тип ucProducts?", options: ["ProductList", "OrderList", "UserControl", "Form"], correct: 0 },
-                    { q: "Какой тип ucOrders?", options: ["OrderList", "ProductList", "UserControl", "Form"], correct: 0 },
-                    { q: "Что делает btnOrders_Click?", options: ["Открывает список заказов", "Открывает товары", "Закрывает форму", "Обновляет данные"], correct: 0 },
-                    { q: "Какой цвет акцента используется?", options: ["#00FA9A", "#7FFF00", "#FFFFFF", "#000000"], correct: 0 },
-                    { q: "Что происходит при закрытии MainForm?", options: ["Форма закрывается", "Открывается Login", "Ничего специального", "Сохраняются данные"], correct: 0 },
-                    { q: "Какой параметр передаётся в ShowPage для показа товаров?", options: ["ucProducts, false", "ucOrders, true", "ucProducts, true", "ucOrders, false"], correct: 0 }
-                ],
-                code: `using System;
+    annotations: [
+      [6,'public partial class Login : Form','partial — часть класса в Designer.cs, наследует Form'],
+      [13,'private void Login_Load(...)','Срабатывает при открытии формы'],
+      [15,'usersTableAdapter.Fill(obuvDBDataSet.Users);','Загружаем всех пользователей из БД в DataSet'],
+      [18,'private void btnEnter_Click(...)','Обработчик кнопки "Войти"'],
+      [21,'var dt = usersTableAdapter.GetDataByLogPass(...)','Запрос в БД: найти пользователя по логину и паролю'],
+      [23,'if (dt.Count == 0)','Если ничего не нашли — неверные данные'],
+      [31,'OpenMain(dt[0].FullName, dt[0].RoleName);','Берём ФИО и роль первого (единственного) результата'],
+      [40,'OpenMain("Гость", "Гость");','Гость — не проверяем БД, даём роль "Гость"'],
+      [45,'MainForm mf = new MainForm(fullName, roleName);','Создаём главную форму, передаём имя и роль'],
+      [46,'Hide();','Прячем окно Login (не закрываем!)'],
+      [47,'mf.FormClosed += (s, e) => { tbPass.Text = ""; Show(); };','Когда MainForm закроется — чистим пароль и показываем Login снова'],
+      [48,'mf.Show();','Открываем главную форму'],
+    ]
+  },
+  {
+    name: "MainForm.cs",
+    code: `using System;
 using System.Windows.Forms;
 
 namespace ObuvApp
@@ -291,7 +600,9 @@ namespace ObuvApp
         private void MainForm_Load(object sender, EventArgs e)
         {
             lblUsername.Text = fullName;
-            btnOrders.Visible = roleName == "Менеджер" || roleName == "Администратор";
+
+            bool isManager = roleName == "Менеджер" || roleName == "Администратор";
+            btnOrders.Visible = isManager;
 
             ucProducts = new ProductList(roleName);
             ShowPage(ucProducts, false);
@@ -311,245 +622,34 @@ namespace ObuvApp
             ShowPage(ucOrders, true);
         }
 
-        private void btnBack_Click(object sender, EventArgs e) => ShowPage(ucProducts, false);
-
-        private void btnExit_Click(object sender, EventArgs e) => Close();
-    }
-}`,
-                commented: `using System;                    // Базовые классы .NET
-using System.Windows.Forms;      // Всё, что связано с формами, кнопками, MessageBox и т.д.
-
-namespace ObuvApp
-{
-    public partial class Login : Form          // Класс формы Login наследуется от стандартного класса Form
-    {
-        public Login() => InitializeComponent(); // Конструктор формы. Вызывает метод, созданный дизайнером Visual Studio
-
-        private void Login_Load(object sender, EventArgs e)
-        {
-            // При загрузке формы сразу заполняем DataSet данными из таблицы Users (нужно для авторизации)
-            usersTableAdapter.Fill(obuvDBDataSet.Users);
-        }
-
-        private void btnEnter_Click(object sender, EventArgs e)
-        {
-            try
-            {
-                // Выполняем запрос к базе данных: ищем пользователя по логину и паролю
-                var dt = usersTableAdapter.GetDataByLogPass(tbLogin.Text, tbPass.Text);
-
-                if (dt.Count == 0) // Если записей не найдено — пользователь ввёл неверные данные
-                {
-                    MessageBox.Show("Неверный логин или пароль", "Ошибка", 
-                        MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                // Если пользователь найден — открываем главную форму
-                OpenMain(dt[0].FullName, dt[0].RoleName);
-            }
-            catch (Exception ex)
-            {
-                // Если произошла ошибка (например, нет подключения к БД)
-                MessageBox.Show("Ошибка подключения:\n" + ex.Message, "Ошибка", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void btnGuest_Click(object sender, EventArgs e)
-        {
-            // Кнопка "Гость" — вход без проверки логина и пароля
-            OpenMain("Гость", "Гость");
-        }
-
-        private void OpenMain(string fullName, string roleName)
-        {
-            // Создаём экземпляр главной формы и передаём в неё ФИО и роль текущего пользователя
-            MainForm mf = new MainForm(fullName, roleName);
-            
-            Hide(); // Скрываем текущую форму Login
-            
-            // После закрытия MainForm очищаем поле пароля и снова показываем форму Login
-            mf.FormClosed += (s, e) => { tbPass.Clear(); Show(); };
-            
-            mf.Show(); // Показываем главную форму
-        }
-    }
-}`
-            },
-            {
-                name: "ProductCard.cs",
-                explanation: "Карточка товара с фото, скидкой и цветовой индикацией.",
-                questions: [
-                    { q: "Какой цвет фона, если StockQty = 0?", options: ["LightSkyBlue", "Red", "Green", "White"], correct: 0 },
-                    { q: "Какой цвет фона при скидке > 15%?", options: ["#2E8B57", "LightSkyBlue", "Red", "White"], correct: 0 },
-                    { q: "Какой метод заполняет карточку данными?", options: ["SetData", "FillCard", "LoadData", "UpdateCard"], correct: 0 },
-                    { q: "Какое событие вызывается при клике по карточке?", options: ["CardClicked", "Click", "CardClick", "OnClick"], correct: 0 },
-                    { q: "Какой путь используется для загрузки фото?", options: ["PhotoPath", "ImagePath", "Picture", "FilePath"], correct: 0 },
-                    { q: "Какой класс используется для чтения изображения?", options: ["Image.FromStream", "Bitmap.FromFile", "PictureBox.Load", "File.ReadAllBytes"], correct: 0 },
-                    { q: "Что отображается, если фото отсутствует?", options: ["Properties.Resources.picture", "null", "default.jpg", "empty.png"], correct: 0 },
-                    { q: "Какой цвет по умолчанию у карточки?", options: ["Color.White", "LightSkyBlue", "#2E8B57", "Gray"], correct: 0 },
-                    { q: "В каком формате выводится цена?", options: ["0.00", "0", "0.0", "00.00"], correct: 0 },
-                    { q: "Какой метод вызывается при клике по любой части карточки?", options: ["Card_Click", "Click", "OnCardClick", "HandleClick"], correct: 0 },
-                    { q: "Какой SizeMode у PictureBox?", options: ["Zoom", "StretchImage", "Normal", "CenterImage"], correct: 0 },
-                    { q: "Какой цвет используется для высокой скидки?", options: ["#2E8B57", "LightSkyBlue", "Red", "Yellow"], correct: 0 },
-                    { q: "Какой цвет используется при отсутствии товара?", options: ["LightSkyBlue", "#2E8B57", "Red", "White"], correct: 0 },
-                    { q: "Что делает SetData?", options: ["Заполняет карточку данными", "Загружает фото", "Сохраняет данные", "Обновляет UI"], correct: 0 },
-                    { q: "Какой тип параметра принимает SetData?", options: ["DataRowView", "DataRow", "string", "int"], correct: 0 },
-                    { q: "Какой event объявлен в классе ProductCard?", options: ["CardClicked", "Click", "CardClick", "OnCardClicked"], correct: 0 },
-                    { q: "Какой Property хранит ProductId?", options: ["ProductId", "Id", "ProductID", "ItemId"], correct: 0 },
-                    { q: "Какой метод вызывается при клике?", options: ["Card_Click", "Click", "OnClick", "HandleClick"], correct: 0 },
-                    { q: "Что происходит в catch при ошибке загрузки фото?", options: ["productPic.Image = Properties.Resources.picture", "throw ex", "MessageBox", "return"], correct: 0 },
-                    { q: "Какой цвет #2E8B57 используется для?", options: ["Скидка > 15%", "Нет товара", "Обычная карточка", "Выделение"], correct: 0 }
-                ],
-                code: `using System;
-using System.Data;
-using System.Drawing;
-using System.IO;
-using System.Windows.Forms;
-
-namespace ObuvApp
-{
-    public partial class ProductCard : UserControl
-    {
-        public int ProductId { get; private set; }
-        public event EventHandler CardClicked;
-
-        public ProductCard() => InitializeComponent();
-
-        private void Card_Click(object sender, EventArgs e) => CardClicked?.Invoke(this, EventArgs.Empty);
-
-        public void SetData(DataRowView row)
-        {
-            ProductId = Convert.ToInt32(row["ProductId"]);
-
-            decimal price = Convert.ToDecimal(row["Price"]);
-            int discount = Convert.ToInt32(row["Discount"]);
-            int stock = Convert.ToInt32(row["StockQty"]);
-
-            lblHeader.Text = row["CategoryName"] + " | " + row["ProductName"];
-            lblDescription.Text = "Описание: " + row["Discription"];
-            lblMan.Text = "Производитель: " + row["ManufactureName"];
-            lblSup.Text = "Поставщик: " + row["SupplierName"];
-            lblUnit.Text = "Единица измерения: " + row["UnitName"];
-            lblStock.Text = "Количество на складе: " + stock;
-
-            if (discount > 0)
-            {
-                decimal finalPrice = price * (100 - discount) / 100m;
-                lblPriceOld.Visible = true;
-                lblPriceOld.Text = price.ToString("0.00");
-                lblPriceNew.Text = "Цена: " + finalPrice.ToString("0.00");
-                lblDiscount.Text = "Скидка " + discount + "%";
-            }
-            else
-            {
-                lblPriceOld.Visible = false;
-                lblPriceNew.Text = "Цена: " + price.ToString("0.00");
-                lblDiscount.Text = "Действующая скидка";
-            }
-
-            Color bg = stock == 0 ? Color.LightSkyBlue : discount > 15 ? ColorTranslator.FromHtml("#2E8B57") : Color.White;
-            panelRoot.BackColor = panelInfo.BackColor = panelPhoto.BackColor = panelDiscount.BackColor = bg;
-
-            string rel = row["PhotoPath"].ToString();
-            string full = Path.Combine(Application.StartupPath, rel);
-
-            try
-            {
-                productPic.Image = (!string.IsNullOrEmpty(rel) && File.Exists(full))
-                    ? Image.FromStream(new MemoryStream(File.ReadAllBytes(full)))
-                    : Properties.Resources.picture;
-            }
-            catch { productPic.Image = Properties.Resources.picture; }
-        }
-    }
-}`,
-                commented: `using System;
-using System.Windows.Forms;
-
-namespace ObuvApp
-{
-    public partial class MainForm : Form
-    {
-        private readonly string fullName;   // ФИО пользователя (readonly — значение нельзя изменить после присвоения)
-        private readonly string roleName;   // Роль пользователя (Администратор / Менеджер / Гость)
-
-        private ProductList ucProducts;     // UserControl со списком товаров
-        private OrderList ucOrders;         // UserControl со списком заказов
-
-        public MainForm(string fullName, string roleName)
-        {
-            InitializeComponent();          // Инициализация компонентов, созданных в дизайнере
-            this.fullName = fullName;       // Сохраняем ФИО
-            this.roleName = roleName;       // Сохраняем роль
-        }
-
-        private void MainForm_Load(object sender, EventArgs e)
-        {
-            lblUsername.Text = fullName;    // Показываем ФИО в правом верхнем углу
-
-            // Кнопка "Заказы" видна только менеджеру и администратору
-            btnOrders.Visible = roleName == "Менеджер" || roleName == "Администратор";
-
-            ucProducts = new ProductList(roleName);   // Создаём список товаров
-            ShowPage(ucProducts, false);              // Показываем список товаров по умолчанию
-        }
-
-        private void ShowPage(UserControl uc, bool canBack)
-        {
-            DownPanel.Controls.Clear();      // Удаляем всё, что было в рабочей панели
-            uc.Dock = DockStyle.Fill;        // Новый контрол растягивается на всю рабочую область
-            DownPanel.Controls.Add(uc);      // Добавляем новый UserControl
-            btnBack.Visible = canBack;       // Показываем/скрываем кнопку "Назад"
-        }
-
-        private void btnOrders_Click(object sender, EventArgs e)
-        {
-            if (ucOrders == null) 
-                ucOrders = new OrderList(roleName);   // Создаём список заказов только при первом нажатии
-
-            ShowPage(ucOrders, true);                 // Переключаемся на заказы и показываем кнопку "Назад"
-        }
-
         private void btnBack_Click(object sender, EventArgs e)
         {
-            ShowPage(ucProducts, false);              // Возвращаемся обратно на список товаров
+            ShowPage(ucProducts, false);
         }
 
         private void btnExit_Click(object sender, EventArgs e)
         {
-            Close();                                  // Закрываем главную форму (приложение завершит работу)
+            Close();
         }
     }
-}`
-            },
-            {
-                name: "ProductList.cs",
-                explanation: "Список товаров с поиском, фильтром и сортировкой.",
-                questions: [
-                    { q: "По какому полю происходит поиск товаров?", options: ["SearchText", "ProductName", "Article", "Description"], correct: 0 },
-                    { q: "Какой метод перерисовывает все карточки?", options: ["RenderCards", "ShowCards", "LoadCards", "UpdateCards"], correct: 0 },
-                    { q: "Какой запрос проверяет использование товара в заказах?", options: ["CountProductInOrders", "CheckInOrders", "IsUsedInOrder", "CountOrders"], correct: 0 },
-                    { q: "Только какая роль может удалять товар?", options: ["Администратор", "Менеджер", "Гость", "Клиент"], correct: 0 },
-                    { q: "Какой метод применяет фильтр и сортировку?", options: ["ApplyView", "FilterView", "SortView", "UpdateView"], correct: 0 },
-                    { q: "Какой ComboBox отвечает за фильтр по поставщику?", options: ["cbSupplier", "cbFilter", "cbSearch", "cbSort"], correct: 0 },
-                    { q: "Какой метод заполняет список поставщиков?", options: ["FillSuppliersCombo", "LoadSuppliers", "GetSuppliers", "UpdateCombo"], correct: 0 },
-                    { q: "Какой BindingSource используется для товаров?", options: ["productsBindingSource", "bindingSource1", "dataSource", "productSource"], correct: 0 },
-                    { q: "Какой метод открывает форму редактирования товара?", options: ["OpenEdit", "EditProduct", "ShowEditForm", "LoadEdit"], correct: 0 },
-                    { q: "Какой метод вызывается при изменении текста поиска?", options: ["ViewChanged", "SearchChanged", "TextChanged", "FilterChanged"], correct: 0 },
-                    { q: "Как сортируется по количеству на складе (возрастание)?", options: ["StockQty ASC", "StockQty DESC", "Qty ASC", "Quantity ASC"], correct: 0 },
-                    { q: "Как сортируется по количеству на складе (убывание)?", options: ["StockQty DESC", "StockQty ASC", "Qty DESC", "Quantity DESC"], correct: 0 },
-                    { q: "Какой флаг проверяет права администратора?", options: ["IsAdmin", "isAdmin", "AdminMode", "CanEdit"], correct: 0 },
-                    { q: "Какой FlowLayoutPanel используется для карточек?", options: ["pnlCards", "panelCards", "cardsPanel", "flowPanel"], correct: 0 },
-                    { q: "Какой метод очищает панель перед добавлением карточек?", options: ["pnlCards.Controls.Clear()", "ClearPanel()", "RemoveAll()", "ResetPanel()"], correct: 0 },
-                    { q: "Какой запрос используется для удаления товара?", options: ["DeleteById", "RemoveProduct", "DeleteProduct", "RemoveById"], correct: 0 },
-                    { q: "Что делает ApplyView?", options: ["Применяет фильтр и сортировку", "Загружает данные", "Рисует карточки", "Обновляет UI"], correct: 0 },
-                    { q: "Какой SelectedIndex по умолчанию у cbSort?", options: ["0", "1", "2", "-1"], correct: 0 },
-                    { q: "Какой цвет акцента используется в кнопках?", options: ["#00FA9A", "#7FFF00", "#FFFFFF", "#000000"], correct: 0 },
-                    { q: "Что происходит после успешного сохранения в ProductEdit?", options: ["productsTableAdapter.Fill и ApplyView", "Close()", "MessageBox", "Reload()"], correct: 0 }
-                ],
-                code: `using System;
+}`,
+    annotations: [
+      [8,'private readonly string fullName;','readonly = нельзя изменить после конструктора'],
+      [10,'private ProductList ucProducts;','Храним ссылки на UserControl-ы, чтобы не пересоздавать'],
+      [13,'public MainForm(string fullName, string roleName)','Конструктор принимает имя и роль из Login'],
+      [22,'lblUsername.Text = fullName;','Показываем имя в шапке формы'],
+      [24,'bool isManager = roleName == "Менеджер" || roleName == "Администратор";','Менеджер ИЛИ Администратор — видят кнопку заказов'],
+      [25,'btnOrders.Visible = isManager;','Скрываем/показываем кнопку по роли'],
+      [27,'ucProducts = new ProductList(roleName);','Создаём список товаров, передаём роль'],
+      [28,'ShowPage(ucProducts, false);','Показываем товары без кнопки "Назад"'],
+      [32,'DownPanel.Controls.Clear();','Очищаем нижнюю панель перед добавлением нового экрана'],
+      [33,'uc.Dock = DockStyle.Fill;','UserControl занимает всё доступное пространство'],
+      [40,'if (ucOrders == null) ucOrders = new OrderList(roleName);','Создаём список заказов один раз (лениво)'],
+    ]
+  },
+  {
+    name: "ProductList.cs",
+    code: `using System;
 using System.Data;
 using System.Windows.Forms;
 
@@ -581,16 +681,15 @@ namespace ObuvApp
             {
                 productsTableAdapter.Fill(obuvDBDataSet.Products);
                 suppliersTableAdapter.Fill(obuvDBDataSet.Suppliers);
-
                 productsBindingSource.DataSource = obuvDBDataSet.Products;
-
                 FillSuppliersCombo();
                 cbSort.SelectedIndex = 0;
-                ApplyView();
+                RenderCards();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка подключения:\n" + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ошибка подключения:\\n" + ex.Message, "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
@@ -598,8 +697,8 @@ namespace ObuvApp
         {
             cbSupplier.Items.Clear();
             cbSupplier.Items.Add("Все поставщики");
-            foreach (var row in obuvDBDataSet.Suppliers)
-                cbSupplier.Items.Add(row.SupplierName);
+            for (int i = 0; i < obuvDBDataSet.Suppliers.Count; i++)
+                cbSupplier.Items.Add(obuvDBDataSet.Suppliers[i].SupplierName);
             cbSupplier.SelectedIndex = 0;
         }
 
@@ -608,8 +707,9 @@ namespace ObuvApp
             pnlCards.Controls.Clear();
             int width = pnlCards.ClientSize.Width - pnlCards.Padding.Horizontal - 20;
 
-            foreach (DataRowView row in productsBindingSource)
+            for (int i = 0; i < productsBindingSource.Count; i++)
             {
+                DataRowView row = (DataRowView)productsBindingSource[i];
                 ProductCard card = new ProductCard();
                 card.SetData(row);
                 card.Width = width;
@@ -621,160 +721,186 @@ namespace ObuvApp
 
         private void Card_CardClicked(object sender, EventArgs e)
         {
-            selectedProductId = ((ProductCard)sender).ProductId;
+            ProductCard card = (ProductCard)sender;
+            selectedProductId = card.ProductId;
+
             if (!IsAdmin)
             {
-                MessageBox.Show("Редактирование доступно только администратору", "Ошибка доступа", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Редактирование доступно только администратору",
+                    "Ошибка доступа", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             OpenEdit(selectedProductId);
         }
 
-        private void ViewChanged(object sender, EventArgs e) => ApplyView();
-
-        private void ApplyView()
+        private void ViewChanged(object sender, EventArgs e)
         {
+            string filter = "";
             string q = tbSearch.Text.Trim().Replace("'", "''");
-            string filter = q == "" ? "" : "SearchText LIKE '%" + q + "%'";
+
+            if (q.Length > 0)
+                filter = "ProductName LIKE '%" + q + "%'";
 
             if (cbSupplier.SelectedIndex > 0)
             {
-                if (filter != "") filter += " AND ";
+                if (filter.Length > 0) filter += " AND ";
                 filter += "SupplierName = '" + cbSupplier.Text.Replace("'", "''") + "'";
             }
 
             productsBindingSource.Filter = filter;
-            productsBindingSource.Sort = cbSort.SelectedIndex == 1 ? "StockQty ASC" :
-                                         cbSort.SelectedIndex == 2 ? "StockQty DESC" : "";
+
+            if (cbSort.SelectedIndex == 1) productsBindingSource.Sort = "StockQty ASC";
+            else if (cbSort.SelectedIndex == 2) productsBindingSource.Sort = "StockQty DESC";
+            else productsBindingSource.Sort = "";
 
             RenderCards();
         }
 
-        private void btnAdd_Click(object sender, EventArgs e)
-        {
-            if (IsAdmin) OpenEdit(null);
-        }
+        private void btnAdd_Click(object sender, EventArgs e) { OpenEdit(null); }
 
         private void btnDel_Click(object sender, EventArgs e)
         {
             if (selectedProductId == 0) { MessageBox.Show("Выберите товар"); return; }
 
             int used = productsTableAdapter.CountProductInOrders(selectedProductId) ?? 0;
-            if (used > 0)
-            {
-                MessageBox.Show("Нельзя удалить товар, он используется в заказе");
-                return;
-            }
+            if (used > 0) { MessageBox.Show("Нельзя удалить: товар в заказе"); return; }
 
             try
             {
                 productsTableAdapter.DeleteById(selectedProductId);
                 selectedProductId = 0;
                 productsTableAdapter.Fill(obuvDBDataSet.Products);
-                ApplyView();
+                RenderCards();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ошибка: " + ex.Message, "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void OpenEdit(int? id)
         {
-            using (ProductEdit f = new ProductEdit(id))
-                if (f.ShowDialog() == DialogResult.OK)
-                {
-                    productsTableAdapter.Fill(obuvDBDataSet.Products);
-                    ApplyView();
-                }
+            ProductEdit f = new ProductEdit(id);
+            if (f.ShowDialog() == DialogResult.OK)
+            {
+                productsTableAdapter.Fill(obuvDBDataSet.Products);
+                RenderCards();
+            }
         }
     }
 }`,
-                commented: `using System;
+    annotations: [
+      [7,'public partial class ProductList : UserControl','UserControl — встраиваемый компонент (не отдельное окно)'],
+      [22,'IsAdmin = roleName == "Администратор";','Флаг роли — чтобы не сравнивать строки каждый раз'],
+      [23,'IsManager = roleName == "Менеджер" || IsAdmin;','Администратор тоже является менеджером (по правам)'],
+      [25,'pnlTools.Visible = IsManager;','Панель поиска/фильтров скрыта для клиента и гостя'],
+      [26,'btnAdd.Visible = IsAdmin;','Кнопки добавления/удаления — только для администратора'],
+      [31,'productsTableAdapter.Fill(obuvDBDataSet.Products);','Загружаем данные из БД в локальный DataSet'],
+      [33,'productsBindingSource.DataSource = obuvDBDataSet.Products;','Связываем источник данных для фильтрации/сортировки'],
+      [55,'int width = pnlCards.ClientSize.Width - pnlCards.Padding.Horizontal - 20;','Ширина карточки = ширина панели минус отступы'],
+      [58,'DataRowView row = (DataRowView)productsBindingSource[i];','Приводим объект к DataRowView для доступа к полям'],
+      [59,'ProductCard card = new ProductCard();','Создаём новую карточку товара'],
+      [63,'card.CardClicked += Card_CardClicked;','Подписываемся на событие клика по карточке'],
+      [85,'filter = "ProductName LIKE \'%" + q + "%\'";','Фильтр по части названия — LIKE с %'],
+      [91,'productsBindingSource.Filter = filter;','Применяем фильтр к источнику данных'],
+      [93,'productsBindingSource.Sort = "StockQty ASC";','Сортировка по остатку: ASC = возрастание'],
+      [104,'int used = productsTableAdapter.CountProductInOrders(selectedProductId) ?? 0;','Проверяем: товар используется в заказах? ?? 0 — если null, то 0'],
+    ]
+  },
+  {
+    name: "ProductCard.cs",
+    code: `using System;
+using System.Data;
+using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 namespace ObuvApp
 {
-    public partial class MainForm : Form
+    public partial class ProductCard : UserControl
     {
-        private readonly string fullName;   // ФИО пользователя (readonly — значение нельзя изменить после присвоения)
-        private readonly string roleName;   // Роль пользователя (Администратор / Менеджер / Гость)
+        public int ProductId { get; private set; }
+        public event EventHandler CardClicked;
 
-        private ProductList ucProducts;     // UserControl со списком товаров
-        private OrderList ucOrders;         // UserControl со списком заказов
-
-        public MainForm(string fullName, string roleName)
+        public ProductCard()
         {
-            InitializeComponent();          // Инициализация компонентов, созданных в дизайнере
-            this.fullName = fullName;       // Сохраняем ФИО
-            this.roleName = roleName;       // Сохраняем роль
+            InitializeComponent();
         }
 
-        private void MainForm_Load(object sender, EventArgs e)
+        private void Card_Click(object sender, EventArgs e)
         {
-            lblUsername.Text = fullName;    // Показываем ФИО в правом верхнем углу
-
-            // Кнопка "Заказы" видна только менеджеру и администратору
-            btnOrders.Visible = roleName == "Менеджер" || roleName == "Администратор";
-
-            ucProducts = new ProductList(roleName);   // Создаём список товаров
-            ShowPage(ucProducts, false);              // Показываем список товаров по умолчанию
+            CardClicked?.Invoke(this, EventArgs.Empty);
         }
 
-        private void ShowPage(UserControl uc, bool canBack)
+        public void SetData(DataRowView row)
         {
-            DownPanel.Controls.Clear();      // Удаляем всё, что было в рабочей панели
-            uc.Dock = DockStyle.Fill;        // Новый контрол растягивается на всю рабочую область
-            DownPanel.Controls.Add(uc);      // Добавляем новый UserControl
-            btnBack.Visible = canBack;       // Показываем/скрываем кнопку "Назад"
-        }
+            ProductId = Convert.ToInt32(row["ProductId"]);
 
-        private void btnOrders_Click(object sender, EventArgs e)
-        {
-            if (ucOrders == null) 
-                ucOrders = new OrderList(roleName);   // Создаём список заказов только при первом нажатии
+            string category = row["CategoryName"].ToString();
+            string name = row["ProductName"].ToString();
+            decimal price = Convert.ToDecimal(row["Price"]);
+            int discount = Convert.ToInt32(row["Discount"]);
+            int stock = Convert.ToInt32(row["StockQty"]);
 
-            ShowPage(ucOrders, true);                 // Переключаемся на заказы и показываем кнопку "Назад"
-        }
+            lblHeader.Text = category + " | " + name;
+            lblDescription.Text = "Описание: " + row["Discription"];
+            lblMan.Text = "Производитель: " + row["ManufacturerName"];
+            lblSup.Text = "Поставщик: " + row["SupplierName"];
+            lblUnit.Text = "Единица измерения: " + row["UnitName"];
+            lblStock.Text = "Количество на складе: " + stock;
 
-        private void btnBack_Click(object sender, EventArgs e)
-        {
-            ShowPage(ucProducts, false);              // Возвращаемся обратно на список товаров
-        }
+            if (discount > 0)
+            {
+                decimal finalPrice = price * (100 - discount) / 100m;
+                lblPriceOld.Visible = true;
+                lblPriceOld.Text = price.ToString("0.00");
+                lblPriceNew.Text = "Цена: " + finalPrice.ToString("0.00");
+                lblDiscount.Text = "Скидка " + discount + "%";
+            }
+            else
+            {
+                lblPriceOld.Visible = false;
+                lblPriceNew.Text = "Цена: " + price.ToString("0.00");
+                lblDiscount.Text = "Действующая скидка";
+            }
 
-        private void btnExit_Click(object sender, EventArgs e)
-        {
-            Close();                                  // Закрываем главную форму (приложение завершит работу)
+            Color bg = Color.White;
+            if (stock == 0) bg = Color.LightSkyBlue;
+            else if (discount > 15) bg = Color.MediumSpringGreen;
+            panelRoot.BackColor = bg;
+            panelInfo.BackColor = bg;
+            panelPhoto.BackColor = bg;
+            panelDiscount.BackColor = bg;
+
+            string rel = row["PhotoPath"].ToString();
+            string full = Path.Combine(Application.StartupPath, rel);
+
+            if (!string.IsNullOrEmpty(rel) && File.Exists(full))
+                productPic.Image = Image.FromStream(new MemoryStream(File.ReadAllBytes(full)));
+            else
+                productPic.Image = Properties.Resources.picture;
         }
     }
-}`
-            },
-            {
-                name: "ProductEdit.cs",
-                explanation: "Форма добавления / редактирования товара.",
-                questions: [
-                    { q: "Какое расширение используется для новых фотографий?", options: [".png", ".jpg", ".bmp", ".gif"], correct: 0 },
-                    { q: "Какой метод сохраняет изменения в базу данных?", options: ["productsTableAdapter.Update", "SaveChanges", "UpdateProduct", "Commit"], correct: 0 },
-                    { q: "Какой класс уменьшает размер фото?", options: ["Bitmap", "Image", "PictureBox", "Graphics"], correct: 0 },
-                    { q: "Какой GUID используется для имени нового файла?", options: ["Guid.NewGuid()", "new Guid()", "RandomGuid()", "FileNameGuid()"], correct: 0 },
-                    { q: "Что хранит переменная pendingSource?", options: ["Путь к выбранному фото", "Имя файла", "Байт массив", "URL"], correct: 0 },
-                    { q: "Какой метод показывает текущее фото товара?", options: ["ShowPhoto", "LoadPhoto", "DisplayPhoto", "UpdatePhoto"], correct: 0 },
-                    { q: "Какой DialogResult возвращается при успешном сохранении?", options: ["DialogResult.OK", "DialogResult.Yes", "DialogResult.Save", "DialogResult.Close"], correct: 0 },
-                    { q: "Что проверяется перед сохранением (наименование)?", options: ["tbName.Text.Trim() == ''", "tbName.Text == ''", "tbName == null", "tbName.Length == 0"], correct: 0 },
-                    { q: "Что проверяется перед сохранением (артикул)?", options: ["tbArticle.Text.Trim() == ''", "tbArticle.Text == ''", "tbArticle == null", "tbArticle.Length == 0"], correct: 0 },
-                    { q: "Что проверяется перед сохранением (цена)?", options: ["numPrice.Value <= 0", "numPrice.Value == 0", "numPrice == 0", "numPrice < 0"], correct: 0 },
-                    { q: "Какой DropDownStyle у всех ComboBox?", options: ["DropDownList", "DropDown", "Simple", "None"], correct: 0 },
-                    { q: "Какой NumericUpDown отвечает за скидку?", options: ["numDiscount", "numSale", "numPercent", "numDiscountValue"], correct: 0 },
-                    { q: "Какой метод копирует новое фото в папку images?", options: ["bmp.Save", "File.Copy", "Image.Save", "CopyFile"], correct: 0 },
-                    { q: "Что происходит со старым фото при замене?", options: ["Оно удаляется", "Оно остаётся", "Оно переименовывается", "Оно игнорируется"], correct: 0 },
-                    { q: "Какой метод вызывается при загрузке формы?", options: ["ProductEdit_Load", "Load", "Shown", "Activated"], correct: 0 },
-                    { q: "Что делает productsBindingSource.AddNew()?", options: ["Создаёт новую запись", "Загружает данные", "Сохраняет", "Очищает"], correct: 0 },
-                    { q: "Какой Size используется для уменьшенного фото?", options: ["300, 200", "200, 200", "400, 300", "100, 100"], correct: 0 },
-                    { q: "Какой формат сохранения изображения?", options: ["ImageFormat.Png", "ImageFormat.Jpeg", "ImageFormat.Bmp", "ImageFormat.Gif"], correct: 0 },
-                    { q: "Что делает ShowPhoto()?", options: ["Загружает и показывает фото", "Сохраняет фото", "Удаляет фото", "Обновляет путь"], correct: 0 },
-                    { q: "Какой Directory.CreateDirectory используется?", options: ["images", "photos", "uploads", "temp"], correct: 0 }
-                ],
-                code: `using System;
+}`,
+    annotations: [
+      [11,'public int ProductId { get; private set; }','Свойство: снаружи только читать, внутри можно изменить'],
+      [12,'public event EventHandler CardClicked;','Событие — другие формы подпишутся и узнают о клике'],
+      [20,'CardClicked?.Invoke(this, EventArgs.Empty);','?. — вызываем событие только если есть подписчики'],
+      [30,'decimal price = Convert.ToDecimal(row["Price"]);','Преобразуем объект из DataRow к нужному типу'],
+      [34,'lblHeader.Text = category + " | " + name;','Заголовок карточки: "Женская | Туфли"'],
+      [41,'decimal finalPrice = price * (100 - discount) / 100m;','Цена со скидкой: 1000 * (100-20)/100 = 800'],
+      [43,'lblPriceOld.Text = price.ToString("0.00");','Старая цена зачёркнутым шрифтом'],
+      [54,'if (stock == 0) bg = Color.LightSkyBlue;','Нет на складе → голубой фон'],
+      [55,'else if (discount > 15) bg = Color.MediumSpringGreen;','Скидка >15% → зелёный фон'],
+      [62,'string full = Path.Combine(Application.StartupPath, rel);','Полный путь к фото относительно папки приложения'],
+      [64,'productPic.Image = Image.FromStream(new MemoryStream(File.ReadAllBytes(full)));','Загружаем фото через MemoryStream — файл сразу освобождается'],
+      [66,'productPic.Image = Properties.Resources.picture;','Фото не найдено — показываем картинку-заглушку из ресурсов'],
+    ]
+  },
+  {
+    name: "ProductEdit.cs",
+    code: `using System;
 using System.Data;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -819,23 +945,21 @@ namespace ObuvApp
         {
             var rel = ((DataRowView)productsBindingSource.Current)["PhotoPath"].ToString();
             var full = pendingSource ?? (rel == "" ? "" : Path.Combine(Application.StartupPath, rel));
-            pbPhoto.Image = File.Exists(full) ? Image.FromStream(new MemoryStream(File.ReadAllBytes(full))) : Properties.Resources.picture;
+            pbPhoto.Image = File.Exists(full)
+                ? Image.FromStream(new MemoryStream(File.ReadAllBytes(full)))
+                : Properties.Resources.picture;
         }
 
         private void btnChoosePhoto_Click(object sender, EventArgs e)
         {
             if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                pendingSource = openFileDialog.FileName;
-                ShowPhoto();
-            }
+            { pendingSource = openFileDialog.FileName; ShowPhoto(); }
         }
 
         private void btnSave_Click(object sender, EventArgs e)
         {
             if (tbName.Text.Trim() == "") { MessageBox.Show("Укажите наименование"); return; }
             if (tbArticle.Text.Trim() == "") { MessageBox.Show("Укажите артикул"); return; }
-            if (numPrice.Value <= 0) { MessageBox.Show("Цена должна быть больше 0"); return; }
 
             try
             {
@@ -844,8 +968,7 @@ namespace ObuvApp
                 {
                     var dir = Path.Combine(Application.StartupPath, "images");
                     Directory.CreateDirectory(dir);
-                    var rel = "images\\" + Guid.NewGuid().ToString("N") + ".png";
-
+                    var rel = "images\\\\" + Guid.NewGuid().ToString("N") + ".png";
                     using (var src = Image.FromFile(pendingSource))
                     using (var bmp = new Bitmap(src, 300, 200))
                         bmp.Save(Path.Combine(Application.StartupPath, rel), ImageFormat.Png);
@@ -853,10 +976,8 @@ namespace ObuvApp
                     var old = row["PhotoPath"].ToString();
                     if (old != "" && File.Exists(Path.Combine(Application.StartupPath, old)))
                         File.Delete(Path.Combine(Application.StartupPath, old));
-
                     row["PhotoPath"] = rel;
                 }
-
                 productsBindingSource.EndEdit();
                 productsTableAdapter.Update(obuvDBDataSet.Products);
                 DialogResult = DialogResult.OK;
@@ -868,244 +989,28 @@ namespace ObuvApp
         private void btnCancel_Click(object sender, EventArgs e) { DialogResult = DialogResult.Cancel; Close(); }
     }
 }`,
-                commented: `using System;                          // Базовые классы .NET
-using System.Data;                     // Работа с DataRowView и BindingSource
-using System.Drawing;                  // Работа с изображениями (Image, Bitmap)
-using System.Drawing.Imaging;          // Форматы сохранения изображений (ImageFormat)
-using System.IO;                       // Работа с файлами и папками (Path, Directory, File)
-using System.Windows.Forms;            // Формы, OpenFileDialog, MessageBox и т.д.
-
-namespace ObuvApp
-{
-    public partial class ProductEdit : Form   // Форма для добавления и редактирования товара
-    {
-        private readonly int? productId;      // ID товара. Если null — значит создаём новый товар
-        private string pendingSource;         // Путь к новому выбранному фото (если пользователь выбрал файл)
-
-        public ProductEdit(int? id)           // Конструктор формы
-        { 
-            InitializeComponent();            // Инициализация всех элементов, созданных в дизайнере
-            productId = id;                   // Сохраняем ID (null = новый товар)
-        }
-
-        private void ProductEdit_Load(object sender, EventArgs e)
-        {
-            try
-            {
-                // Загружаем все справочники, которые нужны в ComboBox
-                categoriesTableAdapter.Fill(obuvDBDataSet.Categories);
-                manufacturersTableAdapter.Fill(obuvDBDataSet.Manufacturers);
-                suppliersTableAdapter.Fill(obuvDBDataSet.Suppliers);
-                unitsTableAdapter.Fill(obuvDBDataSet.Units);
-
-                // Загружаем таблицу товаров
-                productsTableAdapter.Fill(obuvDBDataSet.Products);
-
-                if (productId.HasValue)   // Если редактируем существующий товар
-                {
-                    // Находим нужную строку в BindingSource
-                    productsBindingSource.Position = productsBindingSource.Find("ProductId", productId.Value);
-                    tbId.Visible = true;   // Показываем поле с ID
-                }
-                else   // Если создаём новый товар
-                {
-                    productsBindingSource.AddNew();   // Создаём новую пустую строку в DataSet
-                    tbId.Visible = false;             // Поле ID скрываем
-                }
-
-                ShowPhoto();   // Показываем текущее фото (или заглушку)
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Ошибка");
-                Close();   // Если ошибка — сразу закрываем форму
-            }
-        }
-
-        private void ShowPhoto()
-        {
-            // Берём текущий путь к фото из BindingSource
-            var rel = ((DataRowView)productsBindingSource.Current)["PhotoPath"].ToString();
-            
-            // Если есть новое выбранное фото — используем его, иначе — путь из базы
-            var full = pendingSource ?? (rel == "" ? "" : Path.Combine(Application.StartupPath, rel));
-
-            // Если файл существует — загружаем его, иначе — показываем заглушку
-            pbPhoto.Image = File.Exists(full)
-                ? Image.FromStream(new MemoryStream(File.ReadAllBytes(full)))
-                : Properties.Resources.picture;
-        }
-
-        private void btnChoosePhoto_Click(object sender, EventArgs e)
-        {
-            // Открываем диалог выбора файла
-            if (openFileDialog.ShowDialog() == DialogResult.OK)
-            {
-                pendingSource = openFileDialog.FileName;   // Запоминаем выбранный файл
-                ShowPhoto();                               // Сразу показываем его в PictureBox
-            }
-        }
-
-        private void btnSave_Click(object sender, EventArgs e)
-        {
-            // Простая валидация полей
-            if (tbName.Text.Trim() == "") { MessageBox.Show("Укажите наименование"); return; }
-            if (tbArticle.Text.Trim() == "") { MessageBox.Show("Укажите артикул"); return; }
-            if (numPrice.Value <= 0) { MessageBox.Show("Цена должна быть больше 0"); return; }
-
-            try
-            {
-                var row = (DataRowView)productsBindingSource.Current;   // Текущая строка в DataSet
-
-                // Если пользователь выбрал новое фото — обрабатываем его
-                if (pendingSource != null)
-                {
-                    var dir = Path.Combine(Application.StartupPath, "images");   // Папка images рядом с exe
-                    Directory.CreateDirectory(dir);                               // Создаём папку, если её нет
-
-                    var rel = "images\\" + Guid.NewGuid().ToString("N") + ".png"; // Уникальное имя файла
-
-                    // Уменьшаем фото до 300x200 и сохраняем как PNG
-                    using (var src = Image.FromFile(pendingSource))
-                    using (var bmp = new Bitmap(src, 300, 200))
-                        bmp.Save(Path.Combine(Application.StartupPath, rel), ImageFormat.Png);
-
-                    // Удаляем старое фото, если оно было
-                    var old = row["PhotoPath"].ToString();
-                    if (old != "" && File.Exists(Path.Combine(Application.StartupPath, old)))
-                        File.Delete(Path.Combine(Application.StartupPath, old));
-
-                    // Записываем новый путь в строку
-                    row["PhotoPath"] = rel;
-                }
-
-                productsBindingSource.EndEdit();                    // Завершаем редактирование строки
-                productsTableAdapter.Update(obuvDBDataSet.Products); // Сохраняем изменения в БД
-
-                DialogResult = DialogResult.OK;   // Сообщаем, что форма закрыта успешно
-                Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Ошибка");
-            }
-        }
-
-        private void btnCancel_Click(object sender, EventArgs e)
-        {
-            DialogResult = DialogResult.Cancel;   // Закрываем форму без сох`
-            },
-            {
-                name: "UcOrderCard.cs",
-                explanation: "Карточка одного заказа.",
-                questions: [
-                    { q: "Какое свойство хранит OrderId?", options: ["OrderId", "Id", "OrderID", "OrderNumber"], correct: 0 },
-                    { q: "Какое событие вызывается при клике по карточке?", options: ["CardClicked", "Click", "CardClick", "OnClick"], correct: 0 },
-                    { q: "Какой метод заполняет данные заказа?", options: ["SetData", "FillData", "LoadData", "UpdateData"], correct: 0 },
-                    { q: "Какой формат даты используется для OrderDate?", options: ["dd.MM.yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "dd/MM/yyyy"], correct: 0 },
-                    { q: "Какой формат даты используется для DeliveryDate?", options: ["dd.MM.yyyy", "MM/dd/yyyy", "yyyy-MM-dd", "dd/MM/yyyy"], correct: 0 },
-                    { q: "Какой текст добавляется перед статусом?", options: ["Статус: ", "Status: ", "Статус заказа: ", "Status"], correct: 0 },
-                    { q: "Какой текст добавляется перед адресом?", options: ["Адрес: ", "Address: ", "Пункт выдачи: ", "Address"], correct: 0 },
-                    { q: "Какой DockStyle у основной панели?", options: ["Fill", "Top", "Bottom", "Left"], correct: 0 },
-                    { q: "Какой метод вызывается при клике по любой части карточки?", options: ["Card_Click", "Click", "OnCardClick", "HandleClick"], correct: 0 },
-                    { q: "Какой Label показывает артикул заказа?", options: ["lblArticle", "lblOrderId", "lblStatus", "lblAddress"], correct: 0 },
-                    { q: "Какой Label показывает дату доставки?", options: ["lblDelivDate", "lblDelivery", "lblDate", "lblOrderDate"], correct: 0 },
-                    { q: "Какой Panel содержит информацию о заказе?", options: ["panelInfo", "panelRoot", "panelDeliv", "panelMain"], correct: 0 },
-                    { q: "Какой Panel содержит дату доставки?", options: ["panelDeliv", "panelInfo", "panelRoot", "panelDate"], correct: 0 },
-                    { q: "Какой EventHandler используется?", options: ["CardClicked", "Click", "CardClick", "OnClick"], correct: 0 },
-                    { q: "Что делает Card_Click?", options: ["Вызывает CardClicked", "Закрывает карточку", "Открывает редактирование", "Обновляет данные"], correct: 0 },
-                    { q: "Какой SetData принимает два параметра?", options: ["row и address", "row и id", "id и address", "row"], correct: 0 },
-                    { q: "Какой параметр передаётся для адреса?", options: ["string address", "int addressId", "DataRow address", "string"], correct: 0 },
-                    { q: "Какой Convert.ToInt32 используется?", options: ["Convert.ToInt32(row['OrderId'])", "Convert.ToInt32(row['Id'])", "Convert.ToInt32(row['Number'])", "Convert.ToInt32(row['OrderNumber'])"], correct: 0 },
-                    { q: "Какой Convert.ToDateTime используется?", options: ["Convert.ToDateTime(row['OrderDate'])", "Convert.ToDateTime(row['DeliveryDate'])", "Convert.ToDateTime(row['Date'])", "Convert.ToDateTime(row['OrderDate'])"], correct: 0 },
-                    { q: "Какой TextAlign у даты доставки?", options: ["MiddleCenter", "TopLeft", "BottomRight", "TopCenter"], correct: 0 }
-                ],
-                code: `using System;
-using System.Data;
-using System.Windows.Forms;
-
-namespace ObuvApp
-{
-    public partial class UcOrderCard : UserControl
-    {
-        public int OrderId { get; private set; }
-        public event EventHandler CardClicked;
-
-        public UcOrderCard() => InitializeComponent();
-
-        private void Card_Click(object sender, EventArgs e) => CardClicked?.Invoke(this, EventArgs.Empty);
-
-        public void SetData(DataRowView row, string address)
-        {
-            OrderId = Convert.ToInt32(row["OrderId"]);
-            lblArticle.Text = row["OrderActicle"].ToString();
-            lblStatus.Text = "Статус: " + row["StatusName"];
-            lblAddress.Text = "Адрес: " + address;
-            lblOrderDate.Text = "Дата заказа: " + Convert.ToDateTime(row["OrderDate"]).ToString("dd.MM.yyyy");
-            lblDelivDate.Text = "Доставка\n" + Convert.ToDateTime(row["DeliveryDate"]).ToString("dd.MM.yyyy");
-        }
-    }
-}`,
-                commented: `using System;
-using System.Data;
-using System.Windows.Forms;
-
-namespace ObuvApp
-{
-    public partial class UcOrderCard : UserControl   // Пользовательский элемент — карточка одного заказа
-    {
-        public int OrderId { get; private set; }      // ID заказа (чтобы знать, какой заказ открыт при клике)
-        public event EventHandler CardClicked;        // Событие, которое срабатывает при клике по карточке
-
-        public UcOrderCard() => InitializeComponent(); // Конструктор — вызывает дизайнер
-
-        private void Card_Click(object sender, EventArgs e)
-        {
-            // При клике по любой части карточки (панель, лейблы) вызываем событие
-            CardClicked?.Invoke(this, EventArgs.Empty);
-        }
-
-        public void SetData(DataRowView row, string address)   // Метод заполнения карточки
-        {
-            OrderId = Convert.ToInt32(row["OrderId"]);   // Сохраняем ID заказа
-
-            lblArticle.Text = row["OrderActicle"].ToString();                    // Артикул заказа
-            lblStatus.Text = "Статус: " + row["StatusName"];                      // Статус
-            lblAddress.Text = "Адрес: " + address;                                // Адрес пункта выдачи
-            lblOrderDate.Text = "Дата заказа: " + 
-                Convert.ToDateTime(row["OrderDate"]).ToString("dd.MM.yyyy");      // Дата заказа
-            lblDelivDate.Text = "Доставка\n" + 
-                Convert.ToDateTime(row["DeliveryDate"]).ToString("dd.MM.yyyy");   // Дата доставки
-        }
-    }
-}`
-            },
-            {
-                name: "OrderList.cs",
-                explanation: "Список всех заказов.",
-                questions: [
-                    { q: "Какой DockStyle у панели инструментов?", options: ["Top", "Fill", "Bottom", "Left"], correct: 0 },
-                    { q: "Только какая роль может видеть кнопки добавления/удаления?", options: ["Администратор", "Менеджер", "Гость", "Клиент"], correct: 0 },
-                    { q: "Какой метод перерисовывает карточки заказов?", options: ["RenderCards", "ShowCards", "LoadCards", "UpdateCards"], correct: 0 },
-                    { q: "Какой метод получает адрес пункта выдачи?", options: ["GetAddress", "GetPickupAddress", "LoadAddress", "FindAddress"], correct: 0 },
-                    { q: "Какой BindingSource используется для заказов?", options: ["ordersBindingSource", "bindingSource1", "orderSource", "dataSource"], correct: 0 },
-                    { q: "Какой метод вызывается при клике по карточке заказа?", options: ["Card_CardClicked", "CardClicked", "OnCardClick", "HandleCardClick"], correct: 0 },
-                    { q: "Какой запрос используется при удалении заказа?", options: ["DeteteItemsByOrderId", "DeleteOrder", "RemoveOrder", "DeleteById"], correct: 0 },
-                    { q: "Какой UserControl используется для одной карточки?", options: ["UcOrderCard", "OrderCard", "Card", "OrderUc"], correct: 0 },
-                    { q: "Какой FlowDirection у панели с карточками?", options: ["TopDown", "LeftToRight", "RightToLeft", "BottomUp"], correct: 0 },
-                    { q: "Что делает RenderCards?", options: ["Очищает и добавляет карточки", "Загружает данные", "Сохраняет", "Обновляет"], correct: 0 },
-                    { q: "Какой Margin у каждой карточки?", options: ["new Padding(0, 0, 0, 8)", "new Padding(10)", "new Padding(5)", "new Padding(0)"], correct: 0 },
-                    { q: "Какой метод открывает форму редактирования заказа?", options: ["OpenEdit", "EditOrder", "ShowEdit", "LoadEdit"], correct: 0 },
-                    { q: "Какой SelectedOrderId сбрасывается после удаления?", options: ["selectedOrderId = 0", "selectedOrderId = -1", "selectedOrderId = null", "selectedOrderId = 1"], correct: 0 },
-                    { q: "Какой Fill используется для ordersTableAdapter?", options: ["ordersTableAdapter.Fill(obuvDBDataSet.Orders)", "FillOrders()", "LoadOrders()", "GetOrders()"], correct: 0 },
-                    { q: "Какой PickupPointsId используется для поиска адреса?", options: ["row['PickupPointId']", "row['PickupId']", "row['PointId']", "row['AddressId']"], correct: 0 },
-                    { q: "Что происходит после успешного редактирования заказа?", options: ["ordersTableAdapter.Fill и RenderCards", "Close()", "MessageBox", "Reload()"], correct: 0 },
-                    { q: "Какой метод вызывается при нажатии btnAdd?", options: ["OpenEdit(null)", "AddOrder()", "NewOrder()", "CreateOrder()"], correct: 0 },
-                    { q: "Какой метод вызывается при нажатии btnDel?", options: ["btnDel_Click", "DeleteOrder", "RemoveOrder", "Delete()"], correct: 0 },
-                    { q: "Какой roleName передаётся в конструктор?", options: ["roleName", "userRole", "currentRole", "role"], correct: 0 },
-                    { q: "Какой IsAdmin проверяется перед редактированием?", options: ["IsAdmin", "isAdmin", "AdminMode", "CanEdit"], correct: 0 }
-                ],
-                code: `using System;
+    annotations: [
+      [12,'private readonly int? productId;','int? — nullable int: может быть null (новый товар) или число (редактирование)'],
+      [13,'private string pendingSource;','Временный путь к новому фото до сохранения'],
+      [15,'public ProductEdit(int? id)','Если id == null → добавление, иначе → редактирование'],
+      [21,'categoriesTableAdapter.Fill(obuvDBDataSet.Categories);','Заполняем все справочники для выпадающих списков'],
+      [27,'productsBindingSource.Position = productsBindingSource.Find("ProductId", productId.Value);','Устанавливаем курсор на нужный товар по Id'],
+      [33,'productsBindingSource.AddNew();','Создаём новую пустую строку в DataSet'],
+      [41,'var rel = ((DataRowView)productsBindingSource.Current)["PhotoPath"].ToString();','Берём текущий путь к фото из активной строки'],
+      [42,'var full = pendingSource ?? (...);','?? — если pendingSource не null — берём его, иначе вычисляем путь'],
+      [52,'if (tbName.Text.Trim() == "")','Валидация: обрезаем пробелы и проверяем на пустоту'],
+      [62,'var rel = "images\\\\" + Guid.NewGuid().ToString("N") + ".png";','Уникальное имя файла через GUID — исключает совпадения'],
+      [63,'using (var src = Image.FromFile(pendingSource))','using — автоматически освобождает ресурсы после блока'],
+      [64,'using (var bmp = new Bitmap(src, 300, 200))','Масштабируем картинку до 300x200px'],
+      [69,'File.Delete(Path.Combine(Application.StartupPath, old));','Удаляем старое фото при замене — экономим место'],
+      [71,'productsBindingSource.EndEdit();','Применяем изменения из элементов управления в DataSet'],
+      [72,'productsTableAdapter.Update(obuvDBDataSet.Products);','Сохраняем все изменения DataSet в базу данных'],
+      [73,'DialogResult = DialogResult.OK;','Сообщаем вызывающей форме, что сохранение прошло успешно'],
+    ]
+  },
+  {
+    name: "OrderList.cs",
+    code: `using System;
 using System.Data;
 using System.Windows.Forms;
 
@@ -1137,15 +1042,16 @@ namespace ObuvApp
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка подключения:\n" + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ошибка подключения:\\n" + ex.Message, "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private string GetAddress(int pickupPointId)
         {
-            foreach (var row in obuvDBDataSet.PickupPoints)
-                if (row.PickupPointsId == pickupPointId)
-                    return row.Address;
+            for (int i = 0; i < obuvDBDataSet.PickupPoints.Count; i++)
+                if (obuvDBDataSet.PickupPoints[i].PickupPointsId == pickupPointId)
+                    return obuvDBDataSet.PickupPoints[i].Address;
             return "";
         }
 
@@ -1154,9 +1060,11 @@ namespace ObuvApp
             pnlCards.Controls.Clear();
             int width = pnlCards.ClientSize.Width - pnlCards.Padding.Horizontal - 20;
 
-            foreach (DataRowView row in ordersBindingSource)
+            for (int i = 0; i < ordersBindingSource.Count; i++)
             {
+                DataRowView row = (DataRowView)ordersBindingSource[i];
                 string address = GetAddress(Convert.ToInt32(row["PickupPointId"]));
+
                 UcOrderCard card = new UcOrderCard();
                 card.SetData(row, address);
                 card.Width = width;
@@ -1168,16 +1076,19 @@ namespace ObuvApp
 
         private void Card_CardClicked(object sender, EventArgs e)
         {
-            selectedOrderId = ((UcOrderCard)sender).OrderId;
+            UcOrderCard c = (UcOrderCard)sender;
+            selectedOrderId = c.OrderId;
+
             if (!IsAdmin)
             {
-                MessageBox.Show("Редактирование доступно только администратору", "Ошибка доступа", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show("Редактирование доступно только администратору",
+                    "Ошибка доступа", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 return;
             }
             OpenEdit(selectedOrderId);
         }
 
-        private void btnAdd_Click(object sender, EventArgs e) => OpenEdit(null);
+        private void btnAdd_Click(object sender, EventArgs e) { OpenEdit(null); }
 
         private void btnDel_Click(object sender, EventArgs e)
         {
@@ -1186,169 +1097,91 @@ namespace ObuvApp
             try
             {
                 ordersTableAdapter.DeteteItemsByOrderId(selectedOrderId);
+                ordersTableAdapter.DeleteById(selectedOrderId);
                 selectedOrderId = 0;
                 ordersTableAdapter.Fill(obuvDBDataSet.Orders);
                 RenderCards();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка: " + ex.Message, "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Ошибка: " + ex.Message, "Ошибка",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
         private void OpenEdit(int? id)
         {
-            using (OrderEdit f = new OrderEdit(id))
-                if (f.ShowDialog() == DialogResult.OK)
-                {
-                    ordersTableAdapter.Fill(obuvDBDataSet.Orders);
-                    RenderCards();
-                }
+            OrderEdit f = new OrderEdit(id);
+            if (f.ShowDialog() == DialogResult.OK)
+            {
+                ordersTableAdapter.Fill(obuvDBDataSet.Orders);
+                RenderCards();
+            }
         }
     }
 }`,
-                commented: `using System;
+    annotations: [
+      [21,'IsAdmin = roleName == "Администратор";','Только администратор видит кнопки редактирования заказов'],
+      [22,'pnlTools.Visible = IsAdmin;','Менеджер только смотрит — панель инструментов скрыта'],
+      [40,'for (int i = 0; i < obuvDBDataSet.PickupPoints.Count; i++)','Линейный поиск по пунктам выдачи по Id'],
+      [41,'if (obuvDBDataSet.PickupPoints[i].PickupPointsId == pickupPointId)','Находим нужный пункт и возвращаем его адрес'],
+      [54,'string address = GetAddress(Convert.ToInt32(row["PickupPointId"]));','Для каждого заказа ищем адрес пункта выдачи'],
+      [56,'UcOrderCard card = new UcOrderCard();','Создаём карточку заказа (UserControl)'],
+      [57,'card.SetData(row, address);','Передаём данные строки + адрес в карточку'],
+      [84,'ordersTableAdapter.DeteteItemsByOrderId(selectedOrderId);','Сначала удаляем строки из OrderItems (FK!)'],
+      [85,'ordersTableAdapter.DeleteById(selectedOrderId);','Потом удаляем сам заказ из Orders'],
+    ]
+  },
+  {
+    name: "UcOrderCard.cs",
+    code: `using System;
 using System.Data;
 using System.Windows.Forms;
 
 namespace ObuvApp
 {
-    public partial class OrderList : UserControl
+    public partial class UcOrderCard : UserControl
     {
-        private readonly string roleName;   // Роль текущего пользователя
-        private bool IsAdmin;               // Флаг администратора
-        private int selectedOrderId;        // ID выбранного заказа (для удаления/редактирования)
+        public int OrderId { get; private set; }
+        public event EventHandler CardClicked;
 
-        public OrderList(string roleName)
+        public UcOrderCard()
         {
             InitializeComponent();
-            this.roleName = roleName;
         }
 
-        private void OrderList_Load(object sender, EventArgs e)
+        private void Card_Click(object sender, EventArgs e)
         {
-            IsAdmin = roleName == "Администратор";   // Определяем права
-            pnlTools.Visible = IsAdmin;               // Панель инструментов видна только админу
-
-            try
-            {
-                ordersTableAdapter.Fill(obuvDBDataSet.Orders);           // Загружаем заказы
-                pickupPointsTableAdapter.Fill(obuvDBDataSet.PickupPoints); // Загружаем пункты выдачи
-                ordersBindingSource.DataSource = obuvDBDataSet.Orders;   // Привязываем данные
-                RenderCards();                                           // Рисуем карточки
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Ошибка подключения:\n" + ex.Message, "Ошибка", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            CardClicked?.Invoke(this, EventArgs.Empty);
         }
 
-        private string GetAddress(int pickupPointId)   // Поиск адреса по ID пункта выдачи
+        public void SetData(DataRowView row, string address)
         {
-            foreach (var row in obuvDBDataSet.PickupPoints)   // Перебираем все пункты
-                if (row.PickupPointsId == pickupPointId)
-                    return row.Address;   // Возвращаем адрес
+            OrderId = Convert.ToInt32(row["OrderId"]);
 
-            return "";   // Если не нашли — пустая строка
-        }
-
-        private void RenderCards()
-        {
-            pnlCards.Controls.Clear();   // Удаляем старые карточки
-
-            int width = pnlCards.ClientSize.Width - pnlCards.Padding.Horizontal - 20;
-
-            foreach (DataRowView row in ordersBindingSource)   // Для каждой строки заказов
-            {
-                string address = GetAddress(Convert.ToInt32(row["PickupPointId"])); // Получаем адрес
-
-                UcOrderCard card = new UcOrderCard();   // Создаём карточку
-                card.SetData(row, address);             // Заполняем данными
-                card.Width = width;                     // Задаём ширину
-                card.Margin = new Padding(0, 0, 0, 8);  // Отступы
-                card.CardClicked += Card_CardClicked;   // Подписываемся на клик
-                pnlCards.Controls.Add(card);            // Добавляем на панель
-            }
-        }
-
-        private void Card_CardClicked(object sender, EventArgs e)
-        {
-            selectedOrderId = ((UcOrderCard)sender).OrderId;   // Запоминаем ID выбранного заказа
-
-            if (!IsAdmin)   // Только админ может редактировать
-            {
-                MessageBox.Show("Редактирование доступно только администратору", 
-                    "Ошибка доступа", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                return;
-            }
-
-            OpenEdit(selectedOrderId);
-        }
-
-        private void btnAdd_Click(object sender, EventArgs e)
-        {
-            OpenEdit(null);   // Открываем форму для создания нового заказа
-        }
-
-        private void btnDel_Click(object sender, EventArgs e)
-        {
-            if (selectedOrderId == 0) { MessageBox.Show("Выберите заказ"); return; }
-
-            try
-            {
-                // Удаляем все позиции заказа (OrderItems)
-                ordersTableAdapter.DeteteItemsByOrderId(selectedOrderId);
-
-                selectedOrderId = 0;
-                ordersTableAdapter.Fill(obuvDBDataSet.Orders);   // Обновляем список
-                RenderCards();                                   // Перерисовываем карточки
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Ошибка: " + ex.Message, "Ошибка", 
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-        }
-
-        private void OpenEdit(int? id)
-        {
-            using (OrderEdit f = new OrderEdit(id))   // Открываем форму редактирования
-                if (f.ShowDialog() == DialogResult.OK)
-                {
-                    ordersTableAdapter.Fill(obuvDBDataSet.Orders);
-                    RenderCards();
-                }
+            lblArticle.Text = row["OrderActicle"].ToString();
+            lblStatus.Text = "Статус: " + row["StatusName"];
+            lblAddress.Text = "Адрес: " + address;
+            lblOrderDate.Text = "Дата заказа: " +
+                Convert.ToDateTime(row["OrderDate"]).ToString("dd.MM.yyyy");
+            lblDelivDate.Text = "Доставка\\n" +
+                Convert.ToDateTime(row["DeliveryDate"]).ToString("dd.MM.yyyy");
         }
     }
-}`
-            },
-            {
-                name: "OrderEdit.cs",
-                explanation: "Форма добавления / редактирования заказа.",
-                questions: [
-                    { q: "Какой DropDownStyle у ComboBox со статусами?", options: ["DropDownList", "DropDown", "Simple", "None"], correct: 0 },
-                    { q: "Какой Format у DateTimePicker?", options: ["Short", "Long", "Custom", "None"], correct: 0 },
-                    { q: "Что проверяется перед сохранением (артикул)?", options: ["tbArticle.Text.Trim() == ''", "tbArticle.Text == ''", "tbArticle == null", "tbArticle.Length == 0"], correct: 0 },
-                    { q: "Что проверяется по датам?", options: ["dtpDeliv.Value < dtpOrder.Value", "dtpDeliv.Value > dtpOrder.Value", "dtpDeliv.Value == dtpOrder.Value", "dtpDeliv.Value != dtpOrder.Value"], correct: 0 },
-                    { q: "Какой метод сохраняет изменения в БД?", options: ["ordersTableAdapter.Update", "SaveChanges", "UpdateOrder", "Commit"], correct: 0 },
-                    { q: "Какой DialogResult возвращается при сохранении?", options: ["DialogResult.OK", "DialogResult.Yes", "DialogResult.Save", "DialogResult.Close"], correct: 0 },
-                    { q: "Что делает ordersBindingSource.AddNew()?", options: ["Создаёт новую запись", "Загружает данные", "Сохраняет", "Очищает"], correct: 0 },
-                    { q: "Какой метод заполняет OrderStatuses?", options: ["orderStatusesTableAdapter.Fill", "FillStatuses", "LoadStatuses", "GetStatuses"], correct: 0 },
-                    { q: "Какой метод заполняет PickupPoints?", options: ["pickupPointsTableAdapter.Fill", "FillPickup", "LoadPickup", "GetPickup"], correct: 0 },
-                    { q: "Какой Find используется для поиска существующего заказа?", options: ["ordersBindingSource.Find('OrderId', orderId.Value)", "FindOrder", "SearchOrder", "GetById"], correct: 0 },
-                    { q: "Что делает tbId.Visible = true?", options: ["Показывает ID заказа при редактировании", "Скрывает ID", "Показывает артикул", "Скрывает дату"], correct: 0 },
-                    { q: "Какой DialogResult возвращается при отмене?", options: ["DialogResult.Cancel", "DialogResult.No", "DialogResult.Close", "DialogResult.Abort"], correct: 0 },
-                    { q: "Какой DateTimePicker отвечает за дату заказа?", options: ["dtpOrder", "dtpDeliv", "dtpDate", "dtpDelivery"], correct: 0 },
-                    { q: "Какой DateTimePicker отвечает за дату выдачи?", options: ["dtpDeliv", "dtpOrder", "dtpDate", "dtpDelivery"], correct: 0 },
-                    { q: "Что проверяется: dtpDeliv.Value < dtpOrder.Value?", options: ["Дата выдачи раньше даты заказа", "Дата выдачи позже", "Даты равны", "Даты не равны"], correct: 0 },
-                    { q: "Какой EndEdit используется перед сохранением?", options: ["ordersBindingSource.EndEdit", "EndEdit", "SaveEdit", "CommitEdit"], correct: 0 },
-                    { q: "Какой Update вызывается для сохранения?", options: ["ordersTableAdapter.Update", "UpdateOrder", "SaveOrder", "CommitOrder"], correct: 0 },
-                    { q: "Что происходит при ошибке в btnSave_Click?", options: ["MessageBox.Show(ex.Message, 'Ошибка')", "Close()", "return", "throw ex"], correct: 0 },
-                    { q: "Какой конструктор принимает int? id?", options: ["public OrderEdit(int? id)", "OrderEdit()", "public OrderEdit()", "EditOrder(int id)"], correct: 0 },
-                    { q: "Что делает OrderEdit_Load?", options: ["Загружает данные и справочники", "Сохраняет данные", "Открывает форму", "Закрывает форму"], correct: 0 }
-                ],
-                code: `using System;
+}`,
+    annotations: [
+      [9,'public int OrderId { get; private set; }','Снаружи читаем Id заказа — нужен OrderList для удаления'],
+      [10,'public event EventHandler CardClicked;','Событие клика — OrderList подпишется и откроет редактирование'],
+      [19,'CardClicked?.Invoke(this, EventArgs.Empty);','Вызываем событие; sender = this (сама карточка)'],
+      [22,'public void SetData(DataRowView row, string address)','Принимаем строку данных И уже готовый адрес (строку)'],
+      [24,'OrderId = Convert.ToInt32(row["OrderId"]);','Сохраняем Id чтобы OrderList мог удалить нужный заказ'],
+      [26,'lblArticle.Text = row["OrderActicle"].ToString();','OrderActicle — опечатка в имени поля, но в БД так же'],
+      [29,'Convert.ToDateTime(row["OrderDate"]).ToString("dd.MM.yyyy");','Форматируем дату: 21.05.2026 вместо 05/21/2026'],
+    ]
+  },
+  {
+    name: "OrderEdit.cs",
+    code: `using System;
 using System.Data;
 using System.Windows.Forms;
 
@@ -1400,189 +1233,403 @@ namespace ObuvApp
         private void btnCancel_Click(object sender, EventArgs e) { DialogResult = DialogResult.Cancel; Close(); }
     }
 }`,
-                commented: `using System;
-using System.Data;
-using System.Windows.Forms;
+    annotations: [
+      [9,'private readonly int? orderId;','null = добавление нового заказа, число = редактирование'],
+      [11,'public OrderEdit(int? id)','Конструктор: получаем id от OrderList'],
+      [17,'orderStatusesTableAdapter.Fill(obuvDBDataSet.OrderStatuses);','Загружаем статусы для выпадающего списка cbStatus'],
+      [18,'pickupPointsTableAdapter.Fill(obuvDBDataSet.PickupPoints);','Загружаем пункты выдачи для выпадающего списка cbPickup'],
+      [21,'if (orderId.HasValue)','HasValue — проверка nullable: есть ли значение?'],
+      [23,'ordersBindingSource.Position = ordersBindingSource.Find("OrderId", orderId.Value);','Находим нужный заказ и перемещаем курсор на него'],
+      [28,'ordersBindingSource.AddNew();','Создаём пустую строку заказа для заполнения'],
+      [36,'if (tbArticle.Text.Trim() == "")','Проверяем что артикул заполнен (Trim убирает пробелы)'],
+      [37,'if (dtpDeliv.Value < dtpOrder.Value)','Дата доставки не может быть раньше даты заказа'],
+      [41,'ordersBindingSource.EndEdit();','Применяем все изменения из контролов в DataSet'],
+      [42,'ordersTableAdapter.Update(obuvDBDataSet.Orders);','Сохраняем изменения в базу данных SQL Server'],
+      [43,'DialogResult = DialogResult.OK;','Сигнал OrderList: сохранение успешно, обнови список'],
+    ]
+  }
+];
 
-namespace ObuvApp
-{
-    public partial class OrderEdit : Form
-    {
-        private readonly int? orderId;   // ID заказа. Если null — создаём новый заказ
+const DB_TABLES = [
+  { name:'Roles', icon:'🎭', cols:[
+    {n:'RoleName',t:'NVARCHAR(100)',b:['pk','nn']},
+  ]},
+  { name:'OrderStatuses', icon:'📋', cols:[
+    {n:'StatusName',t:'NVARCHAR(100)',b:['pk','nn']},
+  ]},
+  { name:'Units', icon:'📐', cols:[
+    {n:'UnitName',t:'NVARCHAR(50)',b:['pk','nn']},
+  ]},
+  { name:'Manufacturers', icon:'🏭', cols:[
+    {n:'ManufacturerName',t:'NVARCHAR(150)',b:['pk','nn']},
+  ]},
+  { name:'Suppliers', icon:'🚚', cols:[
+    {n:'SupplierName',t:'NVARCHAR(150)',b:['pk','nn']},
+  ]},
+  { name:'Categories', icon:'👟', cols:[
+    {n:'CategoryName',t:'NVARCHAR(150)',b:['pk','nn']},
+  ]},
+  { name:'PickupPoints', icon:'📍', cols:[
+    {n:'PickupPointsId',t:'INT',b:['pk','nn']},
+    {n:'Address',t:'NVARCHAR(255)',b:['nn']},
+  ]},
+  { name:'Users', icon:'👤', cols:[
+    {n:'UserId',t:'INT',b:['pk','id']},
+    {n:'FullName',t:'NVARCHAR(200)',b:['nn']},
+    {n:'Login',t:'NVARCHAR(150)',b:['nn']},
+    {n:'Password',t:'NVARCHAR(100)',b:['nn']},
+    {n:'RoleName',t:'NVARCHAR(100)',b:['fk','nn']},
+  ]},
+  { name:'Products', icon:'👞', cols:[
+    {n:'ProductId',t:'INT',b:['pk','id']},
+    {n:'Article',t:'NVARCHAR(50)',b:['nn']},
+    {n:'ProductName',t:'NVARCHAR(200)',b:['nn']},
+    {n:'UnitName',t:'NVARCHAR(50)',b:['fk','nn']},
+    {n:'Price',t:'DECIMAL(10,2)',b:['nn']},
+    {n:'SupplierName',t:'NVARCHAR(150)',b:['fk','nn']},
+    {n:'ManufacturerName',t:'NVARCHAR(150)',b:['fk','nn']},
+    {n:'CategoryName',t:'NVARCHAR(150)',b:['fk','nn']},
+    {n:'Discount',t:'INT',b:['nn']},
+    {n:'StockQty',t:'INT',b:['nn']},
+    {n:'Discription',t:'NVARCHAR(MAX)',b:[]},
+    {n:'PhotoPath',t:'NVARCHAR(255)',b:[]},
+  ]},
+  { name:'Orders', icon:'📦', cols:[
+    {n:'OrderId',t:'INT',b:['pk']},
+    {n:'OrderActicle',t:'NVARCHAR(255)',b:['nn']},
+    {n:'OrderDate',t:'DATETIME',b:['nn']},
+    {n:'DeliveryDate',t:'DATE',b:['nn']},
+    {n:'PickupPointId',t:'INT',b:['fk','nn']},
+    {n:'UserId',t:'INT',b:['fk','nn']},
+    {n:'Code',t:'INT',b:['nn']},
+    {n:'StatusName',t:'NVARCHAR(100)',b:['fk','nn']},
+  ]},
+  { name:'OrderItems', icon:'🛒', cols:[
+    {n:'OrderItemId',t:'INT',b:['pk','id']},
+    {n:'OrderId',t:'INT',b:['fk','nn']},
+    {n:'ProductId',t:'INT',b:['fk','nn']},
+    {n:'Quantity',t:'INT',b:['nn']},
+  ]},
+];
 
-        public OrderEdit(int? id) 
-        { 
-            InitializeComponent(); 
-            orderId = id; 
-        }
+// ════════════════════════════════════════════════════
+//  SYNTAX HIGHLIGHT (simple)
+// ════════════════════════════════════════════════════
+function highlight(code) {
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let lines = code.split('\n');
+  return lines.map(line => {
+    let e = esc(line);
+    // strings
+    e = e.replace(/(\"[^\"]*\")/g, '<span class="str">$1</span>');
+    // comments
+    e = e.replace(/(\/\/.*$)/, '<span class="cmt">$1</span>');
+    // keywords
+    const kws = ['using','namespace','public','private','partial','class','static','void','new','return','if','else','for','int','string','bool','var','true','false','null','try','catch','readonly','decimal','event','override','protected','internal'];
+    kws.forEach(k => {
+      e = e.replace(new RegExp('\\b(' + k + ')\\b', 'g'), '<span class="kw">$1</span>');
+    });
+    e = e.replace(/\b(Form|UserControl|EventArgs|EventHandler|DataRowView|DialogResult|MessageBox|Application|Color|Image|Bitmap|File|Path|Directory|Guid|Convert|Padding|DockStyle|MessageBoxButtons|MessageBoxIcon)\b/g, '<span class="cls">$1</span>');
+    return e;
+  }).join('\n');
+}
 
-        private void OrderEdit_Load(object sender, EventArgs e)
-        {
-            try
-            {
-                // Загружаем справочники
-                orderStatusesTableAdapter.Fill(obuvDBDataSet.OrderStatuses);
-                pickupPointsTableAdapter.Fill(obuvDBDataSet.PickupPoints);
-                ordersTableAdapter.Fill(obuvDBDataSet.Orders);
+// ════════════════════════════════════════════════════
+//  SECTION SWITCHING
+// ════════════════════════════════════════════════════
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  const idx = {code:0,annotated:1,game:2,db:3}[id];
+  document.querySelectorAll('nav button')[idx].classList.add('active');
+}
 
-                if (orderId.HasValue)   // Редактируем существующий заказ
-                {
-                    ordersBindingSource.Position = ordersBindingSource.Find("OrderId", orderId.Value);
-                    tbId.Visible = true;   // Показываем поле ID
-                }
-                else   // Создаём новый заказ
-                {
-                    ordersBindingSource.AddNew();   // Создаём новую строку
-                    tbId.Visible = false;           // Поле ID скрываем
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Ошибка");
-                Close();
-            }
-        }
+// ════════════════════════════════════════════════════
+//  CODE SECTION
+// ════════════════════════════════════════════════════
+function initCode() {
+  const tabs = document.getElementById('code-tabs');
+  const content = document.getElementById('code-content');
+  FILES.forEach((f, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (i===0?' active':'');
+    btn.textContent = f.name;
+    btn.onclick = () => {
+      tabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderCodeFile(f, content);
+    };
+    tabs.appendChild(btn);
+  });
+  renderCodeFile(FILES[0], content);
+}
 
-        private void btnSave_Click(object sender, EventArgs e)
-        {
-            if (tbArticle.Text.Trim() == "") { MessageBox.Show("Укажите артикул"); return; }
+function renderCodeFile(f, container) {
+  container.innerHTML = `
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-filename">${f.name}</span>
+        <button class="copy-btn" onclick="copyCode(this)">Копировать</button>
+      </div>
+      <pre><code>${highlight(f.code)}</code></pre>
+    </div>`;
+}
 
-            // Проверка: дата выдачи не должна быть раньше даты заказа
-            if (dtpDeliv.Value < dtpOrder.Value) 
-            { 
-                MessageBox.Show("Дата выдачи раньше даты заказа"); 
-                return; 
-            }
+function copyCode(btn) {
+  const pre = btn.closest('.code-wrap').querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.textContent = '✓ Скопировано';
+    setTimeout(() => btn.textContent = 'Копировать', 1500);
+  });
+}
 
-            try
-            {
-                ordersBindingSource.EndEdit();                    // Завершаем редактирование строки
-                ordersTableAdapter.Update(obuvDBDataSet.Orders);  // Сохраняем изменения в БД
+// ════════════════════════════════════════════════════
+//  ANNOTATED SECTION
+// ════════════════════════════════════════════════════
+function initAnnotated() {
+  const tabs = document.getElementById('ann-tabs');
+  const content = document.getElementById('ann-content');
+  FILES.forEach((f, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab-btn' + (i===0?' active':'');
+    btn.textContent = f.name;
+    btn.onclick = () => {
+      tabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAnnotated(f, content);
+    };
+    tabs.appendChild(btn);
+  });
+  renderAnnotated(FILES[0], content);
+}
 
-                DialogResult = DialogResult.OK;   // Успешное закрытие
-                Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(ex.Message, "Ошибка");
-            }
-        }
+function renderAnnotated(f, container) {
+  const annMap = {};
+  f.annotations.forEach(([ln, , comment]) => { annMap[ln] = comment; });
 
-        private void btnCancel_Click(object sender, EventArgs e)
-        {
-            DialogResult = DialogResult.Cancel;   // Закрытие без сохранения
-            Close();
-        }
+  const lines = f.code.split('\n');
+  let html = '<div class="code-wrap"><div class="code-header"><span class="code-filename">' + f.name + ' — с пояснениями</span></div><div style="padding:12px">';
+
+  lines.forEach((line, idx) => {
+    const ln = idx + 1;
+    const comment = annMap[ln];
+    const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    html += `<div class="ann-line">
+      <span class="ann-num">${ln}</span>
+      <span class="ann-code">${highlight(line) || '&nbsp;'}</span>
+      ${comment ? `<span class="ann-comment">← ${comment}</span>` : ''}
+    </div>`;
+  });
+
+  html += '</div></div>';
+  container.innerHTML = html;
+}
+
+// ════════════════════════════════════════════════════
+//  GAME SECTION
+// ════════════════════════════════════════════════════
+let gameAnswers = [];
+
+function initGame() {
+  const sel = document.getElementById('game-file-sel');
+  FILES.forEach((f, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = f.name;
+    sel.appendChild(opt);
+  });
+}
+
+function startGame() {
+  const fileIdx = parseInt(document.getElementById('game-file-sel').value);
+  const blanks = parseInt(document.getElementById('game-diff').value);
+  const f = FILES[fileIdx];
+  const lines = f.code.split('\n');
+
+  // Pick random lines that aren't empty/short
+  const eligible = lines.map((l, i) => ({i, l})).filter(x => x.l.trim().length > 8);
+  const picks = [];
+  const used = new Set();
+  while (picks.length < blanks && picks.length < eligible.length) {
+    const r = eligible[Math.floor(Math.random() * eligible.length)];
+    if (!used.has(r.i)) { used.add(r.i); picks.push(r.i); }
+  }
+
+  gameAnswers = [];
+  const area = document.getElementById('game-area');
+  document.getElementById('game-result').className = 'game-result';
+  document.getElementById('game-score').textContent = '';
+
+  let html = '';
+  lines.forEach((line, idx) => {
+    if (picks.includes(idx)) {
+      // Remove a chunk from the line (30-70%)
+      const trimmed = line.trimStart();
+      const indent = line.length - trimmed.length;
+      const indentStr = line.substring(0, indent);
+
+      // Pick random chunk
+      const words = trimmed.split(/(\s+)/);
+      const start = Math.floor(words.length * 0.2);
+      const end = Math.max(start + 1, Math.floor(words.length * 0.8));
+      const missing = words.slice(start, end).join('');
+      const before = indentStr + words.slice(0, start).join('');
+      const after = words.slice(end).join('');
+
+      gameAnswers.push({ lineIdx: idx, answer: missing.trim() });
+      const gIdx = gameAnswers.length - 1;
+
+      const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      html += `<div class="game-line"><span style="color:var(--muted);min-width:32px;text-align:right;margin-right:10px;font-size:11px">${idx+1}</span><span style="white-space:pre">${esc(before)}</span><input class="game-blank" data-idx="${gIdx}" spellcheck="false" autocomplete="off" placeholder="..."><span style="white-space:pre">${esc(after)}</span></div>`;
+    } else {
+      const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      html += `<div class="game-line"><span style="color:var(--muted);min-width:32px;text-align:right;margin-right:10px;font-size:11px">${idx+1}</span><span style="white-space:pre;color:var(--text)">${highlight(line) || '&nbsp;'}</span></div>`;
     }
-}`
-            }
-        ];
-        let currentFile = codes[0];
+  });
 
-        // ====================== ОСНОВНЫЕ ФУНКЦИИ ======================
-        function populateSelect() {
-            const select = document.getElementById('fileSelect');
-            select.innerHTML = codes.map((f, i) => `<option value="${i}">${f.name}</option>`).join('');
-            select.onchange = () => {
-                currentFile = codes[select.value];
-                renderCurrentFile();
-            };
-        }
+  area.innerHTML = html;
+}
 
-        function renderCurrentFile() {
-            document.getElementById('title').textContent = currentFile.name;
-            document.getElementById('explanation').innerHTML = `<p class="text-[#e2e8f0]">${currentFile.explanation}</p>`;
-            document.getElementById('originalCode').textContent = currentFile.code || '// Код пока не загружен';
-        }
+function checkGame() {
+  if (!gameAnswers.length) { alert('Сначала нажми Старт'); return; }
+  let correct = 0;
+  gameAnswers.forEach((a, i) => {
+    const input = document.querySelector(`.game-blank[data-idx="${i}"]`);
+    if (!input) return;
+    const val = input.value.trim();
+    if (val.toLowerCase() === a.answer.toLowerCase()) {
+      input.classList.add('correct');
+      input.classList.remove('wrong');
+      correct++;
+    } else {
+      input.classList.add('wrong');
+      input.classList.remove('correct');
+      input.title = 'Правильно: ' + a.answer;
+    }
+  });
 
-        function showTab(n) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('tab-active'));
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.add('hidden'));
-            document.getElementById('tab' + n + '-btn').classList.add('tab-active');
-            document.getElementById('tab' + n).classList.remove('hidden');
+  const res = document.getElementById('game-result');
+  const total = gameAnswers.length;
+  if (correct === total) {
+    res.className = 'game-result show success';
+    res.textContent = '🎉 Отлично! ' + correct + ' / ' + total + ' — всё верно!';
+  } else {
+    res.className = 'game-result show fail';
+    res.textContent = '✗ ' + correct + ' / ' + total + ' — наведи на красные поля чтобы увидеть ответ';
+  }
+  document.getElementById('game-score').textContent = correct + '/' + total;
+}
 
-            if (n === 0) renderCurrentFile();
-            if (n === 1) loadQuiz();
-            if (n === 2) {
-                const commentedEl = document.getElementById('commentedCode');
-                commentedEl.innerHTML = `<pre class="code p-8 rounded-2xl overflow-auto">${currentFile.commented || currentFile.code}</pre>`;
-            }
-        }
+// ════════════════════════════════════════════════════
+//  DB SECTION
+// ════════════════════════════════════════════════════
+function initDB() {
+  const grid = document.getElementById('db-grid');
+  const badgeLabels = {pk:'PK',fk:'FK',nn:'NN',id:'IDENTITY'};
+  const badgeClasses = {pk:'badge-pk',fk:'badge-fk',nn:'badge-nn',id:'badge-id'};
 
-        // ====================== ТЕСТ ======================
-        function loadQuiz() {
-            const container = document.getElementById('quizContainer');
-            container.innerHTML = '';
+  DB_TABLES.forEach(t => {
+    let rows = t.cols.map(c => {
+      const badges = c.b.map(b => `<span class="badge ${badgeClasses[b]}">${badgeLabels[b]}</span>`).join('');
+      return `<tr><td>${c.n}${badges}</td><td class="type-tag">${c.t}</td></tr>`;
+    }).join('');
 
-            currentFile.questions.forEach((item, i) => {
-                let html = `<div class="bg-[#334155] p-6 rounded-2xl mb-6">`;
-                html += `<p class="font-semibold mb-3">${i + 1}. ${item.q}</p>`;
-                item.options.forEach((opt, idx) => {
-                    html += `<label class="flex items-center gap-2 mb-2 cursor-pointer"><input type="radio" name="q${i}" value="${idx}"><span class="text-[#e2e8f0]">${opt}</span></label>`;
-                });
-                html += `</div>`;
-                container.innerHTML += html;
-            });
-        }
+    grid.innerHTML += `
+      <div class="db-card">
+        <div class="db-card-header"><span class="db-icon">${t.icon}</span>${t.name}</div>
+        <table class="db-table">
+          <thead><tr><th>Столбец</th><th>Тип</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+  });
+}
 
-        function checkQuiz() {
-            let correct = 0;
-            currentFile.questions.forEach((item, i) => {
-                const selected = document.querySelector(`input[name="q${i}"]:checked`);
-                if (selected && parseInt(selected.value) === item.correct) correct++;
-            });
-            alert(`✅ Тест завершён!\nПравильных ответов: ${correct} из ${currentFile.questions.length}`);
-        }
+// ════════════════════════════════════════════════════
+//  FLASH QUIZ
+// ════════════════════════════════════════════════════
+let flashScore = 0, flashTotal = 0;
 
-        // ====================== ИГРА «Заполни пропуски» ======================
-        function startGame() {
-            removedParts = []; // очищаем предыдущую игру
+function startFlash() {
+  // Pick random table + random column question
+  const t = DB_TABLES[Math.floor(Math.random() * DB_TABLES.length)];
+  const questionTypes = [
+    () => {
+      // "Какой тип у поля X в таблице Y?"
+      const col = t.cols[Math.floor(Math.random() * t.cols.length)];
+      const correct = col.t;
+      const wrongs = [];
+      const allTypes = DB_TABLES.flatMap(tb => tb.cols.map(c => c.t)).filter(x => x !== correct);
+      while (wrongs.length < 3) {
+        const w = allTypes[Math.floor(Math.random() * allTypes.length)];
+        if (!wrongs.includes(w)) wrongs.push(w);
+      }
+      const opts = shuffle([correct, ...wrongs.slice(0,3)]);
+      return { q: `Тип поля <b>${col.n}</b> в таблице <b>${t.name}</b>?`, correct, opts };
+    },
+    () => {
+      // "Какие поля есть в таблице X?"
+      const correct = t.cols[Math.floor(Math.random() * t.cols.length)].n;
+      const wrongCols = DB_TABLES.flatMap(tb => tb.name !== t.name ? tb.cols.map(c => c.n) : []).filter(x => x !== correct);
+      const wrongs = shuffle(wrongCols).slice(0, 3);
+      const opts = shuffle([correct, ...wrongs]);
+      return { q: `Какое из полей есть в таблице <b>${t.name}</b>?`, correct, opts };
+    },
+    () => {
+      // "Что является PK в таблице X?"
+      const pkCol = t.cols.find(c => c.b.includes('pk'));
+      if (!pkCol) return null;
+      const correct = pkCol.n;
+      const wrongs = t.cols.filter(c => !c.b.includes('pk')).map(c => c.n);
+      const extraWrongs = DB_TABLES.flatMap(tb => tb.cols.map(c => c.n)).filter(x => x !== correct);
+      const allWrongs = shuffle([...wrongs, ...extraWrongs]).slice(0, 3);
+      const opts = shuffle([correct, ...allWrongs]);
+      return { q: `Что является PRIMARY KEY в таблице <b>${t.name}</b>?`, correct, opts };
+    }
+  ];
 
-            const lines = currentFile.code.split('\n');
-            let gameLines = [...lines];
-            const numToRemove = Math.floor(lines.length * 0.2);
+  let q = null;
+  while (!q) q = questionTypes[Math.floor(Math.random() * questionTypes.length)]();
 
-            const indices = [];
-            while (indices.length < numToRemove) {
-                const idx = Math.floor(Math.random() * lines.length);
-                if (!indices.includes(idx) && lines[idx].trim() !== '') indices.push(idx);
-            }
+  const area = document.getElementById('flash-area');
+  area.innerHTML = `
+    <div class="flash-question">
+      <div class="flash-q-text">${q.q}</div>
+      <div class="flash-options">
+        ${q.opts.map(o => `<button class="flash-opt" onclick="answerFlash(this,'${escape(o)}','${escape(q.correct)}')">${o}</button>`).join('')}
+      </div>
+      <button class="flash-next" id="flash-next-btn" onclick="startFlash()">Следующий →</button>
+    </div>`;
+}
 
-            indices.forEach(idx => {
-                removedParts.push({ index: idx, original: lines[idx] });
-                gameLines[idx] = '____________________________';
-            });
+function answerFlash(btn, answer, correct) {
+  const decoded = unescape(correct);
+  const decodedAns = unescape(answer);
+  flashTotal++;
+  btn.closest('.flash-options').querySelectorAll('.flash-opt').forEach(b => b.disabled = true);
+  if (decodedAns === decoded) {
+    btn.classList.add('correct');
+    flashScore++;
+  } else {
+    btn.classList.add('wrong');
+    btn.closest('.flash-options').querySelectorAll('.flash-opt').forEach(b => {
+      if (unescape(b.onclick.toString().match(/'([^']+)','[^']+'\)/)?.[1] || '') === decoded) b.classList.add('correct');
+    });
+  }
+  document.getElementById('flash-score').textContent = `Счёт: ${flashScore} / ${flashTotal}`;
+  document.getElementById('flash-next-btn').classList.add('show');
+}
 
-            document.getElementById('gameCode').innerHTML = `<pre class="code p-8 rounded-2xl overflow-auto text-base">${gameLines.join('\n')}</pre>`;
+function shuffle(a) { return [...a].sort(() => Math.random() - .5); }
 
-            let inputs = `<div class="mt-6">`;
-            removedParts.forEach((part, i) => {
-                inputs += `<div class="flex items-center gap-3 mb-4"><span class="font-mono text-sm text-gray-400 w-8">${part.index + 1}:</span><input id="blank${i}" type="text" class="flex-1 p-4 bg-[#1e2937] border border-[#00fa9a] rounded-2xl text-white font-mono" placeholder="Восстанови строку"></div>`;
-            });
-            inputs += `</div>`;
-            document.getElementById('gameInputs').innerHTML = inputs;
-        }
-
-        function checkGame() {
-            if (removedParts.length === 0) {
-                alert("Сначала нажми «Начать новую игру»!");
-                return;
-            }
-
-            let score = 0;
-            removedParts.forEach((part, i) => {
-                const input = document.getElementById('blank' + i);
-                if (input && input.value.trim() === part.original.trim()) score++;
-            });
-
-            alert(`🎉 Игра завершена!\n\nПравильно восстановлено: ${score} из ${removedParts.length} строк`);
-        }
-
-        // ====================== ЗАПУСК ======================
-        populateSelect();
-        renderCurrentFile();
-    </script>
-
+// ════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════
+initCode();
+initAnnotated();
+initGame();
+initDB();
+</script>
 </body>
-
 </html>
