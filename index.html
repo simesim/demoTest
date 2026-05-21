@@ -1316,22 +1316,10 @@ const DB_TABLES = [
 //  SYNTAX HIGHLIGHT (simple)
 // ════════════════════════════════════════════════════
 function highlight(code) {
-  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  let lines = code.split('\n');
-  return lines.map(line => {
-    let e = esc(line);
-    // strings
-    e = e.replace(/(\"[^\"]*\")/g, '<span class="str">$1</span>');
-    // comments
-    e = e.replace(/(\/\/.*$)/, '<span class="cmt">$1</span>');
-    // keywords
-    const kws = ['using','namespace','public','private','partial','class','static','void','new','return','if','else','for','int','string','bool','var','true','false','null','try','catch','readonly','decimal','event','override','protected','internal'];
-    kws.forEach(k => {
-      e = e.replace(new RegExp('\\b(' + k + ')\\b', 'g'), '<span class="kw">$1</span>');
-    });
-    e = e.replace(/\b(Form|UserControl|EventArgs|EventHandler|DataRowView|DialogResult|MessageBox|Application|Color|Image|Bitmap|File|Path|Directory|Guid|Convert|Padding|DockStyle|MessageBoxButtons|MessageBoxIcon)\b/g, '<span class="cls">$1</span>');
-    return e;
-  }).join('\n');
+  return code
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 // ════════════════════════════════════════════════════
