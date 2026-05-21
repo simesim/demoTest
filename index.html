@@ -189,6 +189,28 @@
   @media(max-width:700px) {
     .ann-line { flex-wrap: wrap; }
     .ann-comment { min-width: 100%; max-width: 100%; margin-left: 36px; margin-top: 2px; }
+
+    header { padding: 0 12px; gap: 8px; }
+    nav { gap: 3px; }
+    nav button { font-size: 10px; padding: 4px 7px; }
+    main { padding: 12px; }
+
+    pre { font-size: 11px; padding: 10px; }
+    .code-header { padding: 8px 12px; }
+
+    .game-controls { gap: 8px; }
+    .game-controls select { font-size: 11px; padding: 6px 8px; width: 100%; }
+    .btn-primary, .btn-secondary { width: 100%; text-align: center; padding: 10px; }
+    .game-area { font-size: 11px; padding: 10px; overflow-x: auto; }
+    .game-line { flex-wrap: wrap; }
+    .game-blank { min-width: 80px; max-width: 100%; font-size: 11px; }
+
+    .db-grid { grid-template-columns: 1fr; }
+    .tabs { gap: 4px; }
+    .tab-btn { font-size: 10px; padding: 5px 9px; }
+
+    .section-title { font-size: 16px; }
+    .ann-num { min-width: 28px; }
   }
 
   /* ── GAME ── */
@@ -1435,8 +1457,24 @@ function startGame() {
   const f = FILES[fileIdx];
   const lines = f.code.split('\n');
 
-  // Pick random lines that aren't empty/short
-  const eligible = lines.map((l, i) => ({i, l})).filter(x => x.l.trim().length > 8);
+  // Исключаем строки, которые VS генерирует автоматически
+  const autoGen = [
+    /^\s*using\s/,
+    /^\s*namespace\s/,
+    /^\s*\{[\s]*$/,
+    /^\s*\}[\s]*$/,
+    /^\s*\/\//,
+    /^\s*$/,
+    /InitializeComponent/,
+    /Application\.EnableVisualStyles/,
+    /Application\.SetCompatibleTextRenderingDefault/,
+    /^\s*\[STAThread\]/,
+  ];
+  const eligible = lines.map((l, i) => ({i, l})).filter(x => {
+    if (x.l.trim().length < 14) return false;
+    if (autoGen.some(re => re.test(x.l))) return false;
+    return true;
+  });
   const picks = [];
   const used = new Set();
   while (picks.length < blanks && picks.length < eligible.length) {
