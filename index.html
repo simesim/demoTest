@@ -423,6 +423,50 @@
     color: var(--accent);
     margin-bottom: 16px;
   }
+
+  /* ── SETUP SECTION ── */
+  .setup-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .setup-block-title {
+    font-family: 'Unbounded', sans-serif;
+    font-size: 13px;
+    color: var(--accent2);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .setup-steps {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .setup-steps li {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    padding: 4px 0;
+  }
+  .setup-steps li::marker { color: var(--accent); font-weight: bold; }
+  .setup-notice {
+    background: rgba(74,240,255,.06);
+    border-left: 3px solid var(--accent3);
+    padding: 10px 14px;
+    border-radius: 0 6px 6px 0;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text);
+  }
+  @media(max-width:700px) {
+    .setup-block { padding: 12px; }
+    .setup-steps li { font-size: 12px; }
+    .setup-notice { font-size: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -434,6 +478,7 @@
     <button onclick="showSection('annotated')">💬 С пояснениями</button>
     <button onclick="showSection('game')">🎮 Игра</button>
     <button onclick="showSection('db')">🗄️ Таблицы БД</button>
+    <button onclick="showSection('setup')">🖱️ Настройка</button>
   </nav>
 </header>
 
@@ -490,6 +535,30 @@
   </div>
 </div>
 
+
+<!-- ════════════════════════════════════════════════════ -->
+<!-- SETUP SECTION -->
+<!-- ════════════════════════════════════════════════════ -->
+<div class="section" id="sec-setup">
+  <div class="section-title">Настройка — маршрут по кликам</div>
+  <div class="section-sub">Меньше кода, больше кликов. Всё по шагам: SSMS → Visual Studio → DataSet → Формы</div>
+
+  <div class="tabs" id="setup-tabs">
+    <button class="tab-btn active" onclick="showSetupTab('db')">🗄️ Модуль 1: SSMS</button>
+    <button class="tab-btn" onclick="showSetupTab('project')">📁 Проект VS</button>
+    <button class="tab-btn" onclick="showSetupTab('login')">🔐 Login</button>
+    <button class="tab-btn" onclick="showSetupTab('mainform')">🏠 MainForm</button>
+    <button class="tab-btn" onclick="showSetupTab('productcard')">🃏 ProductCard</button>
+    <button class="tab-btn" onclick="showSetupTab('productlist')">📋 ProductList</button>
+    <button class="tab-btn" onclick="showSetupTab('productedit')">✏️ ProductEdit</button>
+    <button class="tab-btn" onclick="showSetupTab('orderlist')">📦 OrderList</button>
+    <button class="tab-btn" onclick="showSetupTab('ordercard')">🗂️ UcOrderCard</button>
+    <button class="tab-btn" onclick="showSetupTab('orderedit')">📝 OrderEdit</button>
+    <button class="tab-btn" onclick="showSetupTab('dataset')">🔗 DataSet</button>
+  </div>
+
+  <div id="setup-content"></div>
+</div>
 </main>
 
 <script>
@@ -1469,9 +1538,16 @@ function startGame() {
     /Application\.EnableVisualStyles/,
     /Application\.SetCompatibleTextRenderingDefault/,
     /^\s*\[STAThread\]/,
+    /static void Main/,
+    /public partial class/,
+    /internal static class/,
+    // Сигнатуры обработчиков событий создаются двойным кликом в VS
+    /private void \w+_(?:Click|Load|Changed|Closed|Selected)\(object sender/,
+    // Конструкторы (пустые, с InitializeComponent, однострочные)
+    /public \w+\([^)]*\)\s*\{/,
   ];
   const eligible = lines.map((l, i) => ({i, l})).filter(x => {
-    if (x.l.trim().length < 14) return false;
+    if (x.l.trim().length < 18) return false;
     if (autoGen.some(re => re.test(x.l))) return false;
     return true;
   });
@@ -1656,6 +1732,897 @@ initCode();
 initAnnotated();
 initGame();
 initDB();
+
+// ════════════ SETUP SECTION ════════════
+const SETUP_TABS = {
+  db: {
+    title: '🗄️ Модуль 1: SSMS — создание БД',
+    blocks: [
+      {
+        title: '1. Подготовка SSMS',
+        type: 'steps',
+        items: [
+          'Открой SQL Server Management Studio',
+          'Подключись к серверу',
+          'Сервис → Параметры',
+          'Конструкторы → Конструкторы таблиц и баз данных',
+          'Сними галочку «Запретить сохранение изменений, требующих повторного создания таблицы»',
+          'Нажми ОК'
+        ]
+      },
+      {
+        title: '2. Создание базы данных',
+        type: 'steps',
+        items: [
+          'В Object Explorer → ПКМ по «Базы данных»',
+          'Создать базу данных...',
+          'Введи имя: obuvDB',
+          'Нажми ОК',
+          'Проверь: база появилась в дереве слева'
+        ]
+      },
+      {
+        title: '3. Порядок создания таблиц',
+        type: 'notice',
+        text: 'Сначала справочники (на них будут ссылки), потом основные таблицы. Иначе FK не поставить.'
+      },
+      {
+        title: '4. Как создавать каждую таблицу',
+        type: 'steps',
+        items: [
+          'Раскрой свою базу',
+          'ПКМ по Tables → New → Table',
+          'Вводи поля (название, тип, Allow Nulls)',
+          'Для PK: нажми на строку поля → ПКМ → Set Primary Key',
+          'Для Identity: выдели поле → снизу Identity Specification → Is Identity = Yes',
+          'Ctrl+S → введи имя таблицы'
+        ]
+      },
+      {
+        title: '5. Таблицы-справочники (простые, одно поле = PK)',
+        type: 'table',
+        headers: ['Таблица', 'Поле', 'Тип', 'Свойства'],
+        rows: [
+          ['Roles', 'RoleName', 'nvarchar(100)', 'PK, NOT NULL'],
+          ['OrderStatuses', 'StatusName', 'nvarchar(100)', 'PK, NOT NULL'],
+          ['Units', 'UnitName', 'nvarchar(50)', 'PK, NOT NULL'],
+          ['Manufacturers', 'ManufactureName', 'nvarchar(150)', 'PK, NOT NULL'],
+          ['Suppliers', 'SupplierName', 'nvarchar(150)', 'PK, NOT NULL'],
+          ['Categories', 'CategoryName', 'nvarchar(150)', 'PK, NOT NULL'],
+        ]
+      },
+      {
+        title: '6. PickupPoints',
+        type: 'table',
+        headers: ['Поле', 'Тип', 'Свойства'],
+        rows: [
+          ['PickupPointsId', 'int', 'PK, NOT NULL'],
+          ['Address', 'nvarchar(255)', 'NOT NULL'],
+        ]
+      },
+      {
+        title: '7. Users',
+        type: 'table',
+        headers: ['Поле', 'Тип', 'Свойства'],
+        rows: [
+          ['UserId', 'int', 'PK, Identity'],
+          ['FullName', 'nvarchar(200)', 'NOT NULL'],
+          ['Login', 'nvarchar(150)', 'NOT NULL'],
+          ['Password', 'nvarchar(100)', 'NOT NULL'],
+          ['RoleName', 'nvarchar(100)', 'NOT NULL'],
+        ]
+      },
+      {
+        title: '8. Products',
+        type: 'table',
+        headers: ['Поле', 'Тип', 'Свойства'],
+        rows: [
+          ['ProductId', 'int', 'PK, Identity'],
+          ['Article', 'nvarchar(50)', 'NOT NULL'],
+          ['ProductName', 'nvarchar(200)', 'NOT NULL'],
+          ['UnitName', 'nvarchar(50)', 'NOT NULL'],
+          ['Price', 'decimal(10,2)', 'NOT NULL'],
+          ['SupplierName', 'nvarchar(150)', 'NOT NULL'],
+          ['ManufactureName', 'nvarchar(150)', 'NOT NULL'],
+          ['CategoryName', 'nvarchar(150)', 'NOT NULL'],
+          ['Discount', 'int', 'NOT NULL'],
+          ['StockQty', 'int', 'NOT NULL'],
+          ['Discription', 'nvarchar(max)', 'NULL'],
+          ['PhotoPath', 'nvarchar(255)', 'NULL'],
+        ]
+      },
+      {
+        title: '9. Orders',
+        type: 'table',
+        headers: ['Поле', 'Тип', 'Свойства'],
+        rows: [
+          ['OrderId', 'int', 'PK'],
+          ['OrderActicle', 'nvarchar(255)', 'NOT NULL'],
+          ['OrderDate', 'datetime', 'NOT NULL'],
+          ['DeliveryDate', 'date', 'NOT NULL'],
+          ['PickupPointId', 'int', 'NOT NULL'],
+          ['StatusName', 'nvarchar(100)', 'NOT NULL'],
+        ]
+      },
+      {
+        title: '10. OrderItems',
+        type: 'table',
+        headers: ['Поле', 'Тип', 'Свойства'],
+        rows: [
+          ['OrderItemId', 'int', 'PK, Identity'],
+          ['OrderId', 'int', 'NOT NULL'],
+          ['ProductId', 'int', 'NOT NULL'],
+          ['Quantity', 'int', 'NOT NULL'],
+        ]
+      },
+      {
+        title: '11. Связи (FK) — как ставить',
+        type: 'steps',
+        items: [
+          'Открой таблицу в Design',
+          'ПКМ по пустому месту → Relationships...',
+          'Add → Tables and Columns Specification → нажми ...',
+          'Выбери родительскую таблицу и поле',
+          'Выбери дочернюю таблицу и поле',
+          'OK → Close → Ctrl+S'
+        ]
+      },
+      {
+        title: '12. Какие FK ставить',
+        type: 'table',
+        headers: ['Дочерняя таблица', 'Поле', '→ Родительская', 'Поле'],
+        rows: [
+          ['Users', 'RoleName', 'Roles', 'RoleName'],
+          ['Products', 'UnitName', 'Units', 'UnitName'],
+          ['Products', 'SupplierName', 'Suppliers', 'SupplierName'],
+          ['Products', 'ManufactureName', 'Manufacturers', 'ManufactureName'],
+          ['Products', 'CategoryName', 'Categories', 'CategoryName'],
+          ['Orders', 'PickupPointId', 'PickupPoints', 'PickupPointsId'],
+          ['Orders', 'StatusName', 'OrderStatuses', 'StatusName'],
+          ['OrderItems', 'OrderId', 'Orders', 'OrderId'],
+          ['OrderItems', 'ProductId', 'Products', 'ProductId'],
+        ]
+      },
+      {
+        title: '13. Импорт данных',
+        type: 'steps',
+        items: [
+          'Загружай строго по порядку: справочники → Users → Products → Orders → OrderItems',
+          'ПКМ по базе → Tasks → Import Data',
+          'Source: Microsoft Excel → укажи файл',
+          'Destination: SQL Server → своя БД',
+          'Проверь маппинг столбцов',
+          'Finish',
+          'Не вставляй вручную значения в Identity поля (UserId, ProductId, OrderItemId)'
+        ]
+      },
+      {
+        title: '14. 3 пользователя для проверки',
+        type: 'table',
+        headers: ['FullName', 'Login', 'Password', 'RoleName'],
+        rows: [
+          ['Иванов Иван', 'admin', '123', 'Администратор'],
+          ['Петров Пётр', 'manager', '123', 'Менеджер'],
+          ['Сидоров Сидор', 'client', '123', 'Авторизированный клиент'],
+        ]
+      },
+      {
+        title: '15. ER-диаграмма',
+        type: 'steps',
+        items: [
+          'В базе → Database Diagrams → ПКМ → New Database Diagram',
+          'Добавь все таблицы',
+          'Справочники — по краям, Users/Products/Orders/OrderItems — в центре',
+          'File → Print → Microsoft Print to PDF'
+        ]
+      },
+      {
+        title: '16. SQL-скрипт',
+        type: 'steps',
+        items: [
+          'ПКМ по базе → Tasks → Generate Scripts',
+          'Выбери структуру таблиц',
+          'Сохрани в .sql файл'
+        ]
+      },
+    ]
+  },
+
+  project: {
+    title: '📁 Создание проекта Visual Studio',
+    blocks: [
+      {
+        title: '1. Создать проект',
+        type: 'steps',
+        items: [
+          'Открой Visual Studio',
+          'Create a new project',
+          'Windows Forms App (.NET Framework)',
+          'Next',
+          'Имя: ObuvApp',
+          '.NET Framework 4.8',
+          'Create'
+        ]
+      },
+      {
+        title: '2. Добавить формы',
+        type: 'notice',
+        text: 'ПКМ по проекту → Add → Windows Form'
+      },
+      {
+        title: 'Список форм',
+        type: 'table',
+        headers: ['Имя файла', 'Тип'],
+        rows: [
+          ['Login', 'Windows Form'],
+          ['MainForm', 'Windows Form'],
+          ['ProductEdit', 'Windows Form'],
+          ['OrderEdit', 'Windows Form'],
+          ['ProductList', 'User Control'],
+          ['ProductCard', 'User Control'],
+          ['OrderList', 'User Control'],
+          ['UcOrderCard', 'User Control'],
+        ]
+      },
+      {
+        title: '3. Добавить ресурсы',
+        type: 'steps',
+        items: [
+          'ПКМ по проекту → Properties',
+          'Вкладка Resources',
+          'Add Resource → Add Existing File',
+          'Добавь: логотип и picture.png (заглушка для фото)',
+        ]
+      },
+      {
+        title: '4. Точка входа — Program.cs',
+        type: 'notice',
+        text: 'В Program.cs строчка Application.Run(new Login()); — приложение стартует с формы Login, не с MainForm.'
+      },
+    ]
+  },
+
+  dataset: {
+    title: '🔗 DataSet — подключение к БД и запросы',
+    blocks: [
+      {
+        title: '1. Подключить Data Sources',
+        type: 'steps',
+        items: [
+          'View → Other Windows → Data Sources',
+          'Add New Data Source',
+          'Database → Dataset → Next',
+          'New Connection → выбери сервер и базу obuvDB',
+          'Отметь нужные таблицы',
+          'Finish'
+        ]
+      },
+      {
+        title: '2. Какие таблицы нужны',
+        type: 'table',
+        headers: ['Таблица', 'Используется в'],
+        rows: [
+          ['Users', 'Login'],
+          ['Products', 'ProductList, ProductCard, ProductEdit'],
+          ['Categories', 'ProductEdit'],
+          ['Manufacturers', 'ProductEdit'],
+          ['Suppliers', 'ProductList, ProductEdit'],
+          ['Units', 'ProductEdit'],
+          ['Orders', 'OrderList, OrderEdit'],
+          ['OrderStatuses', 'OrderEdit'],
+          ['PickupPoints', 'OrderList, OrderEdit'],
+          ['OrderItems', 'только для проверки FK при удалении'],
+        ]
+      },
+      {
+        title: '3. Перетаскивание на форму',
+        type: 'notice',
+        text: 'Когда тащишь таблицу из Data Sources на форму — VS автоматически создаёт BindingSource, TableAdapter и нужные компоненты. Это и есть «меньше кода, больше кликов».'
+      },
+      {
+        title: '4. Запрос GetDataByLogPass (для Login)',
+        type: 'steps',
+        items: [
+          'Открой obuvDBDataSet.xsd',
+          'На usersTableAdapter → ПКМ → Add Query',
+          'Use SQL statements → SELECT which returns rows',
+          'Вставь: SELECT * FROM Users WHERE Login = @Login AND [Password] = @Password',
+          'Имя метода: GetDataByLogPass',
+          'Finish'
+        ]
+      },
+      {
+        title: '5. Запрос CountProductInOrders (для удаления товара)',
+        type: 'steps',
+        items: [
+          'На productsTableAdapter → ПКМ → Add Query',
+          'Use SQL statements → SELECT which returns single value',
+          'Вставь: SELECT COUNT(*) FROM OrderItems WHERE ProductId = @ProductId',
+          'Имя: CountProductInOrders',
+          'Finish'
+        ]
+      },
+      {
+        title: '6. Запрос DeleteById для Products',
+        type: 'steps',
+        items: [
+          'На productsTableAdapter → ПКМ → Add Query',
+          'Use SQL statements → DELETE',
+          'Вставь: DELETE FROM Products WHERE ProductId = @ProductId',
+          'Имя: DeleteById',
+          'Finish'
+        ]
+      },
+      {
+        title: '7. Запросы для Orders',
+        type: 'steps',
+        items: [
+          'DeteteItemsByOrderId: DELETE FROM OrderItems WHERE OrderId = @OrderId',
+          'DeleteById: DELETE FROM Orders WHERE OrderId = @OrderId',
+          'Оба добавляются так же через ПКМ → Add Query на ordersTableAdapter'
+        ]
+      },
+      {
+        title: '8. SearchText — вычисляемый столбец в Products',
+        type: 'steps',
+        items: [
+          'Открой obuvDBDataSet.xsd',
+          'На таблице Products → ПКМ → Add Column',
+          'Name = SearchText, DataType = System.String',
+          'ReadOnly = True, AllowDBNull = True',
+          "Expression: Article + ' ' + ProductName + ' ' + CategoryName + ' ' + Discription + ' ' + ManufactureName + ' ' + SupplierName + ' ' + UnitName",
+          'Это позволяет искать по всем полям сразу через productsBindingSource.Filter'
+        ]
+      },
+    ]
+  },
+
+  login: {
+    title: '🔐 Login — форма авторизации',
+    blocks: [
+      {
+        title: '1. Что перетащить на форму',
+        type: 'table',
+        headers: ['Элемент', 'Name', 'Text / свойство'],
+        rows: [
+          ['Label', '—', 'Логин:'],
+          ['Label', '—', 'Пароль:'],
+          ['TextBox', 'tbLogin', '—'],
+          ['TextBox', 'tbPass', 'UseSystemPasswordChar = true'],
+          ['Button', 'btnEnter', 'Войти'],
+          ['Button', 'btnGuest', 'Гость'],
+          ['PictureBox', '—', 'Image = логотип, SizeMode = Zoom'],
+        ]
+      },
+      {
+        title: '2. Свойства формы',
+        type: 'table',
+        headers: ['Свойство', 'Значение'],
+        rows: [
+          ['Text', 'Вход'],
+          ['StartPosition', 'CenterScreen'],
+          ['BackColor', 'White'],
+          ['Font', 'Times New Roman, 14'],
+        ]
+      },
+      {
+        title: '3. Подключить Users',
+        type: 'steps',
+        items: [
+          'Открой Data Sources',
+          'Перетащи Users на форму Login',
+          'VS создаст usersTableAdapter и obuvDBDataSet автоматически'
+        ]
+      },
+      {
+        title: '4. События (через вкладку ⚡ Молния)',
+        type: 'table',
+        headers: ['Элемент', 'Событие', 'Имя метода'],
+        rows: [
+          ['Форма Login', 'Load', 'Login_Load'],
+          ['btnEnter', 'Click', 'btnEnter_Click'],
+          ['btnGuest', 'Click', 'btnGuest_Click'],
+        ]
+      },
+      {
+        title: '5. Что делает код',
+        type: 'table',
+        headers: ['Метод', 'Что делает'],
+        rows: [
+          ['Login_Load', 'Заполняет DataSet пользователями из БД'],
+          ['btnEnter_Click', 'Ищет пользователя через GetDataByLogPass, открывает MainForm'],
+          ['btnGuest_Click', 'Открывает MainForm с именем «Гость» и ролью «Гость»'],
+          ['OpenMain', 'Прячет Login, открывает MainForm; при закрытии MainForm — показывает Login снова'],
+        ]
+      },
+    ]
+  },
+
+  mainform: {
+    title: '🏠 MainForm — главная форма',
+    blocks: [
+      {
+        title: '1. Что перетащить',
+        type: 'table',
+        headers: ['Элемент', 'Name', 'Свойства'],
+        rows: [
+          ['Panel', 'TopPanel', 'Dock = Top, Height = 100, BackColor = #00FA9A'],
+          ['Panel', 'DownPanel', 'Dock = Fill'],
+          ['Label', 'lblUsername', 'Anchor = Top|Right, AutoSize = true'],
+          ['Button', 'btnOrders', 'Text = Заказы'],
+          ['Button', 'btnBack', 'Text = Назад'],
+          ['Button', 'btnExit', 'Text = Выйти'],
+          ['PictureBox', '—', 'Image = логотип, SizeMode = Zoom'],
+        ]
+      },
+      {
+        title: '2. Свойства формы',
+        type: 'table',
+        headers: ['Свойство', 'Значение'],
+        rows: [
+          ['Text', 'Главная'],
+          ['BackColor', 'White'],
+          ['Font', 'Times New Roman, 14'],
+          ['WindowState', 'Maximized (по желанию)'],
+        ]
+      },
+      {
+        title: '3. События',
+        type: 'table',
+        headers: ['Элемент', 'Событие', 'Метод'],
+        rows: [
+          ['Форма', 'Load', 'MainForm_Load'],
+          ['btnOrders', 'Click', 'btnOrders_Click'],
+          ['btnBack', 'Click', 'btnBack_Click'],
+          ['btnExit', 'Click', 'btnExit_Click'],
+        ]
+      },
+      {
+        title: '4. Логика кода',
+        type: 'table',
+        headers: ['Что происходит', 'Как'],
+        rows: [
+          ['ФИО из Login', 'lblUsername.Text = fullName'],
+          ['Кнопка заказов скрыта для гостей/клиентов', 'btnOrders.Visible = isManager (Менеджер или Администратор)'],
+          ['Показ экрана', 'DownPanel.Controls.Clear() + uc.Dock = Fill + DownPanel.Controls.Add(uc)'],
+          ['Кнопка Назад', 'Показывается только когда не на товарах'],
+          ['Ленивое создание OrderList', 'if (ucOrders == null) ucOrders = new OrderList(roleName)'],
+        ]
+      },
+    ]
+  },
+
+  productcard: {
+    title: '🃏 ProductCard — карточка товара',
+    blocks: [
+      {
+        title: '1. Что перетащить',
+        type: 'table',
+        headers: ['Элемент', 'Name', 'Свойства'],
+        rows: [
+          ['Panel', 'panelRoot', 'Dock = Fill, BorderStyle = FixedSingle'],
+          ['Panel', 'panelPhoto', 'Dock = Left, Width = 170'],
+          ['PictureBox', 'productPic', 'Dock = Fill, SizeMode = Zoom, Image = Resources.picture'],
+          ['Panel', 'panelDiscount', 'Dock = Right, Width = 150'],
+          ['Label', 'lblDiscount', 'внутри panelDiscount'],
+          ['Label', 'lblPriceNew', 'внутри panelDiscount'],
+          ['Label', 'lblPriceOld', 'ForeColor = Red, Font зачёркнутый'],
+          ['Panel', 'panelInfo', 'Dock = Fill'],
+          ['Label', 'lblHeader', 'внутри panelInfo'],
+          ['Label', 'lblDescription', 'внутри panelInfo'],
+          ['Label', 'lblMan', 'внутри panelInfo'],
+          ['Label', 'lblSup', 'внутри panelInfo'],
+          ['Label', 'lblUnit', 'внутри panelInfo'],
+          ['Label', 'lblStock', 'внутри panelInfo'],
+        ]
+      },
+      {
+        title: '2. Событие Card_Click — назначить на ВСЁ',
+        type: 'notice',
+        text: 'Card_Click нужно назначить на: panelRoot, panelPhoto, panelInfo, panelDiscount, productPic, и все Label. Иначе клик «мимо» не сработает.'
+      },
+      {
+        title: '3. Как назначить одно событие на несколько элементов',
+        type: 'steps',
+        items: [
+          'Выдели первый элемент (panelRoot)',
+          'Вкладка ⚡ Молния → Click → введи Card_Click',
+          'Выдели следующий элемент',
+          'Вкладка ⚡ Молния → Click → выбери из списка уже созданный Card_Click',
+          'Повтори для всех элементов карточки'
+        ]
+      },
+      {
+        title: '4. Логика цвета фона',
+        type: 'table',
+        headers: ['Условие', 'Цвет'],
+        rows: [
+          ['StockQty == 0', 'Color.LightSkyBlue (голубой)'],
+          ['Discount > 15', '#2E8B57 (тёмно-зелёный)'],
+          ['Иначе', 'Color.White'],
+        ]
+      },
+      {
+        title: '5. Логика цены со скидкой',
+        type: 'notice',
+        text: 'finalPrice = price * (100 - discount) / 100m. Если discount > 0 — показываем старую цену (зачёркнутую) и новую. Если 0 — только текущую цену.'
+      },
+      {
+        title: '6. Загрузка фото',
+        type: 'notice',
+        text: 'Путь из PhotoPath + Application.StartupPath. Если файл есть — грузим через MemoryStream (чтобы сразу освободить файл). Если нет — Resources.picture.'
+      },
+    ]
+  },
+
+  productlist: {
+    title: '📋 ProductList — список товаров',
+    blocks: [
+      {
+        title: '1. Что перетащить',
+        type: 'table',
+        headers: ['Элемент', 'Name', 'Свойства'],
+        rows: [
+          ['Panel', 'pnlTools', 'Dock = Top, Height = 55'],
+          ['TextBox', 'tbSearch', 'внутри pnlTools'],
+          ['ComboBox', 'cbSupplier', 'DropDownStyle = DropDownList'],
+          ['ComboBox', 'cbSort', 'DropDownStyle = DropDownList'],
+          ['Button', 'btnAdd', 'Text = Добавить'],
+          ['Button', 'btnDel', 'Text = Удалить'],
+          ['FlowLayoutPanel', 'pnlCards', 'Dock = Fill, AutoScroll = true, FlowDirection = TopDown, WrapContents = false, Padding = 10'],
+        ]
+      },
+      {
+        title: '2. Элементы cbSort — добавить вручную',
+        type: 'table',
+        headers: ['Индекс', 'Текст'],
+        rows: [
+          ['0', 'Без сортировки'],
+          ['1', 'По увеличению кол-ва'],
+          ['2', 'По уменьшению кол-ва'],
+        ]
+      },
+      {
+        title: '3. Перетащить из Data Sources',
+        type: 'steps',
+        items: [
+          'Открой Data Sources',
+          'Перетащи Products на ProductList',
+          'Перетащи Suppliers на ProductList',
+          'VS создаст productsTableAdapter, suppliersTableAdapter, productsBindingSource'
+        ]
+      },
+      {
+        title: '4. События',
+        type: 'table',
+        headers: ['Элемент', 'Событие', 'Метод'],
+        rows: [
+          ['ProductList', 'Load', 'ProductList_Load'],
+          ['tbSearch', 'TextChanged', 'ViewChanged'],
+          ['cbSupplier', 'SelectedIndexChanged', 'ViewChanged'],
+          ['cbSort', 'SelectedIndexChanged', 'ViewChanged'],
+          ['btnAdd', 'Click', 'btnAdd_Click'],
+          ['btnDel', 'Click', 'btnDel_Click'],
+        ]
+      },
+      {
+        title: '5. Разграничение прав',
+        type: 'table',
+        headers: ['Роль', 'pnlTools', 'btnAdd/btnDel', 'Клик по карточке'],
+        rows: [
+          ['Администратор', 'Виден', 'Видны', 'Открывает ProductEdit'],
+          ['Менеджер', 'Виден', 'Скрыты', 'Сообщение об ошибке доступа'],
+          ['Клиент / Гость', 'Скрыт', 'Скрыты', 'Сообщение об ошибке доступа'],
+        ]
+      },
+      {
+        title: '6. Логика поиска и фильтра',
+        type: 'notice',
+        text: "productsBindingSource.Filter ищет по столбцу SearchText через LIKE. Для выбранного поставщика добавляется условие AND по SupplierName. Сортировка задаётся через productsBindingSource.Sort."
+      },
+    ]
+  },
+
+  productedit: {
+    title: '✏️ ProductEdit — добавление/редактирование товара',
+    blocks: [
+      {
+        title: '1. Что перетащить',
+        type: 'table',
+        headers: ['Элемент', 'Name', 'Свойства'],
+        rows: [
+          ['TextBox', 'tbId', 'ReadOnly = true'],
+          ['TextBox', 'tbArticle', '—'],
+          ['TextBox', 'tbName', '—'],
+          ['TextBox', 'tbDesc', 'Multiline = true'],
+          ['ComboBox', 'cbCategory', 'DropDownStyle = DropDownList'],
+          ['ComboBox', 'cbManufacturer', 'DropDownStyle = DropDownList'],
+          ['ComboBox', 'cbSupplier', 'DropDownStyle = DropDownList'],
+          ['ComboBox', 'cbUnit', 'DropDownStyle = DropDownList'],
+          ['NumericUpDown', 'numPrice', 'DecimalPlaces = 2, Maximum = 999999'],
+          ['NumericUpDown', 'numStockQty', '—'],
+          ['NumericUpDown', 'numDiscount', 'Maximum = 100'],
+          ['PictureBox', 'pbPhoto', 'SizeMode = Zoom'],
+          ['Button', 'btnChoosePhoto', 'Text = Выбрать фото'],
+          ['Button', 'btnSave', 'Text = Сохранить'],
+          ['Button', 'btnCancel', 'Text = Отмена'],
+          ['OpenFileDialog', 'openFileDialog', 'Filter = Images|*.jpg;*.png;*.bmp'],
+        ]
+      },
+      {
+        title: '2. Перетащить источники',
+        type: 'steps',
+        items: [
+          'Из Data Sources перетащи на ProductEdit: Products, Categories, Manufacturers, Suppliers, Units',
+          'VS создаст все нужные BindingSource и TableAdapter'
+        ]
+      },
+      {
+        title: '3. Привязки (DataBindings)',
+        type: 'table',
+        headers: ['Элемент', 'Свойство', 'Поле'],
+        rows: [
+          ['tbId', 'Text', 'productsBindingSource → ProductId'],
+          ['tbArticle', 'Text', 'productsBindingSource → Article'],
+          ['tbName', 'Text', 'productsBindingSource → ProductName'],
+          ['tbDesc', 'Text', 'productsBindingSource → Discription'],
+          ['numPrice', 'Value', 'productsBindingSource → Price'],
+          ['numStockQty', 'Value', 'productsBindingSource → StockQty'],
+          ['numDiscount', 'Value', 'productsBindingSource → Discount'],
+          ['cbCategory', 'Text / SelectedValue', 'productsBindingSource → CategoryName'],
+          ['cbManufacturer', 'Text / SelectedValue', 'productsBindingSource → ManufactureName'],
+          ['cbSupplier', 'Text / SelectedValue', 'productsBindingSource → SupplierName'],
+          ['cbUnit', 'Text / SelectedValue', 'productsBindingSource → UnitName'],
+        ]
+      },
+      {
+        title: '4. Настройка ComboBox для справочников',
+        type: 'table',
+        headers: ['ComboBox', 'DataSource', 'DisplayMember'],
+        rows: [
+          ['cbCategory', 'categoriesBindingSource', 'CategoryName'],
+          ['cbManufacturer', 'manufacturersBindingSource', 'ManufactureName'],
+          ['cbSupplier', 'suppliersBindingSource', 'SupplierName'],
+          ['cbUnit', 'unitsBindingSource', 'UnitName'],
+        ]
+      },
+      {
+        title: '5. События',
+        type: 'table',
+        headers: ['Элемент', 'Событие', 'Метод'],
+        rows: [
+          ['Форма', 'Load', 'ProductEdit_Load'],
+          ['btnChoosePhoto', 'Click', 'btnChoosePhoto_Click'],
+          ['btnSave', 'Click', 'btnSave_Click'],
+          ['btnCancel', 'Click', 'btnCancel_Click'],
+        ]
+      },
+      {
+        title: '6. Логика сохранения фото',
+        type: 'notice',
+        text: 'При выборе нового фото: сохраняем его в папку images/ с именем GUID.png (масштаб 300x200), старое фото удаляем. В PhotoPath пишем относительный путь images\имя.png.'
+      },
+      {
+        title: '7. Добавление vs редактирование',
+        type: 'table',
+        headers: ['Режим', 'Как определяется', 'Что делает'],
+        rows: [
+          ['Редактирование', 'productId != null', 'productsBindingSource.Find("ProductId", id) — переходим на нужную строку'],
+          ['Добавление', 'productId == null', 'productsBindingSource.AddNew() — создаём новую строку'],
+        ]
+      },
+    ]
+  },
+
+  orderlist: {
+    title: '📦 OrderList — список заказов',
+    blocks: [
+      {
+        title: '1. Что перетащить',
+        type: 'table',
+        headers: ['Элемент', 'Name', 'Свойства'],
+        rows: [
+          ['Panel', 'pnlTools', 'Dock = Top, Height = 50'],
+          ['Button', 'btnAdd', 'Text = Добавить'],
+          ['Button', 'btnDel', 'Text = Удалить'],
+          ['FlowLayoutPanel', 'pnlCards', 'Dock = Fill, AutoScroll = true, FlowDirection = TopDown, WrapContents = false, Padding = 10'],
+        ]
+      },
+      {
+        title: '2. Перетащить источники',
+        type: 'steps',
+        items: [
+          'Из Data Sources перетащи Orders на OrderList',
+          'Перетащи PickupPoints на OrderList',
+        ]
+      },
+      {
+        title: '3. Права',
+        type: 'table',
+        headers: ['Роль', 'pnlTools (btnAdd/btnDel)', 'Клик по карточке'],
+        rows: [
+          ['Администратор', 'Виден', 'Открывает OrderEdit'],
+          ['Менеджер', 'Скрыт', 'Сообщение об ошибке доступа'],
+        ]
+      },
+      {
+        title: '4. Удаление заказа — важный порядок',
+        type: 'notice',
+        text: 'Сначала DeteteItemsByOrderId (удаляет строки из OrderItems), потом DeleteById (удаляет сам заказ из Orders). Нарушишь порядок — получишь ошибку FK.'
+      },
+      {
+        title: '5. События',
+        type: 'table',
+        headers: ['Элемент', 'Событие', 'Метод'],
+        rows: [
+          ['OrderList', 'Load', 'OrderList_Load'],
+          ['btnAdd', 'Click', 'btnAdd_Click'],
+          ['btnDel', 'Click', 'btnDel_Click'],
+        ]
+      },
+    ]
+  },
+
+  ordercard: {
+    title: '🗂️ UcOrderCard — карточка заказа',
+    blocks: [
+      {
+        title: '1. Что перетащить',
+        type: 'table',
+        headers: ['Элемент', 'Name', 'Что показывает'],
+        rows: [
+          ['Label', 'lblArticle', 'Артикулы заказа (OrderActicle)'],
+          ['Label', 'lblStatus', 'Статус: + StatusName'],
+          ['Label', 'lblAddress', 'Адрес: + адрес пункта выдачи'],
+          ['Label', 'lblOrderDate', 'Дата заказа: + дата'],
+          ['Label', 'lblDelivDate', 'Доставка + дата'],
+        ]
+      },
+      {
+        title: '2. Card_Click — назначить на всё',
+        type: 'notice',
+        text: 'Так же как в ProductCard — Card_Click назначаем на саму карточку, все панели и все Label. Иначе клик по тексту не откроет редактирование.'
+      },
+      {
+        title: '3. Как получить адрес',
+        type: 'notice',
+        text: 'Адрес передаётся готовой строкой из OrderList. OrderList сам ищет адрес через GetAddress(pickupPointId) по таблице PickupPoints в DataSet.'
+      },
+      {
+        title: '4. Форматирование дат',
+        type: 'notice',
+        text: 'Convert.ToDateTime(row["OrderDate"]).ToString("dd.MM.yyyy") — формат 21.05.2026 вместо стандартного американского.'
+      },
+    ]
+  },
+
+  orderedit: {
+    title: '📝 OrderEdit — добавление/редактирование заказа',
+    blocks: [
+      {
+        title: '1. Что перетащить',
+        type: 'table',
+        headers: ['Элемент', 'Name', 'Свойства'],
+        rows: [
+          ['TextBox', 'tbId', 'ReadOnly = true'],
+          ['TextBox', 'tbArticle', '—'],
+          ['ComboBox', 'cbStatus', 'DropDownStyle = DropDownList'],
+          ['ComboBox', 'cbPickup', 'DropDownStyle = DropDownList'],
+          ['DateTimePicker', 'dtpOrder', 'Format = Short'],
+          ['DateTimePicker', 'dtpDeliv', 'Format = Short'],
+          ['Button', 'btnSave', 'Text = Сохранить'],
+          ['Button', 'btnCancel', 'Text = Отмена'],
+        ]
+      },
+      {
+        title: '2. Перетащить источники',
+        type: 'steps',
+        items: [
+          'Из Data Sources перетащи Orders на OrderEdit',
+          'Перетащи OrderStatuses',
+          'Перетащи PickupPoints'
+        ]
+      },
+      {
+        title: '3. Привязки',
+        type: 'table',
+        headers: ['Элемент', 'Свойство', 'Поле'],
+        rows: [
+          ['tbId', 'Text', 'ordersBindingSource → OrderId'],
+          ['tbArticle', 'Text', 'ordersBindingSource → OrderActicle'],
+          ['dtpOrder', 'Value', 'ordersBindingSource → OrderDate'],
+          ['dtpDeliv', 'Value', 'ordersBindingSource → DeliveryDate'],
+        ]
+      },
+      {
+        title: '4. Настройка ComboBox',
+        type: 'table',
+        headers: ['ComboBox', 'DataSource', 'DisplayMember', 'ValueMember'],
+        rows: [
+          ['cbStatus', 'orderStatusesBindingSource', 'StatusName', '—'],
+          ['cbPickup', 'pickupPointsBindingSource', 'Address', 'PickupPointsId'],
+        ]
+      },
+      {
+        title: '5. Валидация при сохранении',
+        type: 'table',
+        headers: ['Проверка', 'Сообщение'],
+        rows: [
+          ['tbArticle пустой', 'Укажите артикул'],
+          ['dtpDeliv < dtpOrder', 'Дата выдачи раньше даты заказа'],
+        ]
+      },
+      {
+        title: '6. События',
+        type: 'table',
+        headers: ['Элемент', 'Событие', 'Метод'],
+        rows: [
+          ['Форма', 'Load', 'OrderEdit_Load'],
+          ['btnSave', 'Click', 'btnSave_Click'],
+          ['btnCancel', 'Click', 'btnCancel_Click'],
+        ]
+      },
+    ]
+  },
+};
+
+function showSetupTab(key) {
+  document.querySelectorAll('#setup-tabs .tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderSetupTab(key);
+}
+
+function renderSetupTab(key) {
+  const data = SETUP_TABS[key];
+  const container = document.getElementById('setup-content');
+
+  let html = '<div style="margin-bottom:20px"><div class="section-title" style="font-size:18px">' + data.title + '</div></div>';
+
+  data.blocks.forEach(block => {
+    html += '<div class="setup-block">';
+    html += '<div class="setup-block-title">' + block.title + '</div>';
+
+    if (block.type === 'steps') {
+      html += '<ol class="setup-steps">';
+      block.items.forEach(item => {
+        html += '<li>' + item + '</li>';
+      });
+      html += '</ol>';
+    } else if (block.type === 'notice') {
+      html += '<div class="setup-notice">' + block.text + '</div>';
+    } else if (block.type === 'table') {
+      html += '<div style="overflow-x:auto"><table class="db-table" style="width:100%"><thead><tr>';
+      block.headers.forEach(h => { html += '<th>' + h + '</th>'; });
+      html += '</tr></thead><tbody>';
+      block.rows.forEach(row => {
+        html += '<tr>';
+        row.forEach((cell, ci) => {
+          const style = ci === 0 ? 'color:var(--accent3);font-weight:bold' : '';
+          html += '<td style="' + style + '">' + cell + '</td>';
+        });
+        html += '</tr>';
+      });
+      html += '</tbody></table></div>';
+    }
+
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+// init setup
+renderSetupTab('db');
+
+// patch showSection to handle setup
+const _origShowSection = showSection;
+showSection = function(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  const idx = {code:0,annotated:1,game:2,db:3,setup:4}[id];
+  if (idx !== undefined) document.querySelectorAll('nav button')[idx].classList.add('active');
+};
 </script>
 </body>
 </html>
