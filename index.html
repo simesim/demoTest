@@ -467,6 +467,43 @@
     .setup-steps li { font-size: 12px; }
     .setup-notice { font-size: 12px; }
   }
+
+  .sort-item {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px 8px 36px;
+    margin-bottom: 6px;
+    font-size: clamp(11px, 2.5vw, 13px);
+    cursor: grab;
+    user-select: none;
+    position: relative;
+    transition: background .15s, border-color .15s;
+  }
+  .sort-item:active { cursor: grabbing; }
+  .sort-item .sort-handle {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted);
+    font-size: 14px;
+  }
+  .sort-item.drag-over { border-color: var(--accent); background: rgba(127,255,0,.06); }
+  .sort-item.correct-pos { border-color: var(--accent2); background: rgba(0,250,154,.08); }
+  .sort-item.wrong-pos { border-color: var(--danger); background: rgba(255,79,107,.08); }
+  .sort-item .sort-num {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 11px;
+    font-weight: 700;
+    display: none;
+  }
+  .sort-item.correct-pos .sort-num { display: block; color: var(--accent2); }
+  .sort-item.wrong-pos .sort-num { display: block; color: var(--danger); }
+  .sort-item.correct-pos .sort-handle, .sort-item.wrong-pos .sort-handle { display: none; }
 </style>
 </head>
 <body>
@@ -502,21 +539,44 @@
 
 <!-- ════════════ GAME ════════════ -->
 <div class="section" id="sec-game">
-  <div class="section-title">Игра: восстанови код</div>
-  <div class="section-sub">Пропущены случайные куски — введи правильный текст</div>
-  <div class="game-controls">
-    <select id="game-file-sel"></select>
-    <select id="game-diff">
-      <option value="3">Лёгкий (3 пропуска)</option>
-      <option value="6" selected>Средний (6 пропусков)</option>
-      <option value="10">Сложный (10 пропусков)</option>
-    </select>
-    <button class="btn-primary" onclick="startGame()">▶ Старт</button>
-    <button class="btn-secondary" onclick="checkGame()">✓ Проверить</button>
-    <div class="game-score" id="game-score"></div>
+  <div class="section-title">Игры для запоминания кода</div>
+  <div class="section-sub">Два режима — выбери вкладку</div>
+
+  <div class="tabs" style="margin-bottom:16px">
+    <button class="tab-btn active" onclick="switchGameMode('fill')">✏️ Впиши пропуск</button>
+    <button class="tab-btn" onclick="switchGameMode('sort')">🔀 Собери метод</button>
   </div>
-  <div class="game-area" id="game-area"><span style="color:var(--muted)">Выбери файл и нажми Старт</span></div>
-  <div class="game-result" id="game-result"></div>
+
+  <!-- GAME 1: Fill blanks -->
+  <div id="game-fill">
+    <div class="game-controls">
+      <select id="game-file-sel"></select>
+      <select id="game-diff">
+        <option value="3">Лёгкий (3)</option>
+        <option value="6" selected>Средний (6)</option>
+        <option value="10">Сложный (10)</option>
+      </select>
+      <button class="btn-primary" onclick="startGame()">▶ Старт</button>
+      <button class="btn-secondary" onclick="checkGame()">✓ Проверить</button>
+      <div class="game-score" id="game-score"></div>
+    </div>
+    <div class="game-area" id="game-area"><span style="color:var(--muted)">Выбери файл и нажми Старт</span></div>
+    <div class="game-result" id="game-result"></div>
+  </div>
+
+  <!-- GAME 2: Sort method lines -->
+  <div id="game-sort" style="display:none">
+    <div class="game-controls">
+      <select id="sort-file-sel"></select>
+      <select id="sort-method-sel"><option>Сначала выбери файл</option></select>
+      <button class="btn-primary" onclick="startSortGame()">▶ Старт</button>
+      <button class="btn-secondary" onclick="checkSortGame()">✓ Проверить</button>
+      <div class="game-score" id="sort-score"></div>
+    </div>
+    <div class="notice" style="font-size:11px;margin-bottom:12px">Перетаскивай строки кода в правильном порядке. Показаны только строки, которые пишутся вручную.</div>
+    <div class="game-area" id="sort-area"><span style="color:var(--muted)">Выбери файл и метод, нажми Старт</span></div>
+    <div class="game-result" id="sort-result"></div>
+  </div>
 </div>
 
 <!-- ════════════ DB ════════════ -->
@@ -2623,6 +2683,263 @@ showSection = function(id) {
   const idx = {code:0,annotated:1,game:2,db:3,setup:4}[id];
   if (idx !== undefined) document.querySelectorAll('nav button')[idx].classList.add('active');
 };
+
+
+// ════════════════════════════════════════════════════
+//  GAME MODE SWITCH
+// ════════════════════════════════════════════════════
+function switchGameMode(mode) {
+  document.getElementById('game-fill').style.display = mode === 'fill' ? 'block' : 'none';
+  document.getElementById('game-sort').style.display = mode === 'sort' ? 'block' : 'none';
+  const tabs = document.querySelectorAll('#sec-game .tab-btn');
+  tabs.forEach(t => t.classList.remove('active'));
+  tabs[mode === 'fill' ? 0 : 1].classList.add('active');
+}
+
+// ════════════════════════════════════════════════════
+//  GAME 2: SORT METHOD LINES
+// ════════════════════════════════════════════════════
+const autoGenSort = [
+  /^\s*using\s/,
+  /^\s*namespace\s/,
+  /^\s*\{[\s]*$/,
+  /^\s*\}[\s]*$/,
+  /^\s*\/\//,
+  /^\s*$/,
+  /InitializeComponent/,
+  /Application\.EnableVisualStyles/,
+  /Application\.SetCompatibleTextRenderingDefault/,
+  /^\s*\[STAThread\]/,
+  /static void Main/,
+  /public partial class/,
+  /internal static class/,
+  /private void \w+_(?:Click|Load|Changed|Closed|Selected)\(object sender/,
+  /public \w+\([^)]*\)\s*\{/,
+];
+
+function isManualLine(line) {
+  const t = line.trim();
+  if (t.length < 10) return false;
+  if (autoGenSort.some(re => re.test(line))) return false;
+  return true;
+}
+
+function extractMethods(code) {
+  const lines = code.split('\n');
+  const methods = [];
+  let current = null;
+  let braceDepth = 0;
+  let methodBraceStart = 0;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Detect method start
+    const isMethodSig = /^\s*(private|public|protected|internal)\s+.*\(.*\)\s*\{?\s*$/.test(line)
+      && !(/class\s/.test(line));
+    const isOneLiner = /^\s*(private|public|protected|internal)\s+.*\(.*\)\s*\{.*\}\s*$/.test(line);
+
+    if (isOneLiner) {
+      // Single line methods like constructors
+      continue;
+    }
+
+    if (isMethodSig && !current) {
+      const nameMatch = trimmed.match(/([\w]+)\s*\(/);
+      current = { name: nameMatch ? nameMatch[1] : 'method', startLine: i, lines: [] };
+      braceDepth = 0;
+    }
+
+    if (current) {
+      for (const ch of line) {
+        if (ch === '{') braceDepth++;
+        if (ch === '}') braceDepth--;
+      }
+      current.lines.push({ idx: i, text: line });
+
+      if (braceDepth <= 0 && current.lines.length > 1) {
+        // Method ended
+        const manualLines = current.lines.filter(l => isManualLine(l.text));
+        if (manualLines.length >= 3) {
+          methods.push({ name: current.name, manual: manualLines });
+        }
+        current = null;
+      }
+    }
+  }
+  return methods;
+}
+
+let sortCorrectOrder = [];
+
+function initSortGame() {
+  const sel = document.getElementById('sort-file-sel');
+  FILES.forEach((f, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = f.name;
+    sel.appendChild(opt);
+  });
+  sel.addEventListener('change', updateMethodSelect);
+  updateMethodSelect();
+}
+
+function updateMethodSelect() {
+  const fileIdx = parseInt(document.getElementById('sort-file-sel').value);
+  const f = FILES[fileIdx];
+  const methods = extractMethods(f.code);
+  const msel = document.getElementById('sort-method-sel');
+  msel.innerHTML = '';
+  if (methods.length === 0) {
+    msel.innerHTML = '<option>Нет подходящих методов</option>';
+    return;
+  }
+  methods.forEach((m, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = m.name + ' (' + m.manual.length + ' строк)';
+    msel.appendChild(opt);
+  });
+}
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  // Make sure it's actually shuffled
+  if (a.every((v, i) => v === arr[i]) && a.length > 1) {
+    [a[0], a[1]] = [a[1], a[0]];
+  }
+  return a;
+}
+
+function startSortGame() {
+  const fileIdx = parseInt(document.getElementById('sort-file-sel').value);
+  const methodIdx = parseInt(document.getElementById('sort-method-sel').value);
+  const f = FILES[fileIdx];
+  const methods = extractMethods(f.code);
+
+  if (isNaN(methodIdx) || !methods[methodIdx]) return;
+
+  const method = methods[methodIdx];
+  sortCorrectOrder = method.manual.map(l => l.text.trim());
+
+  const shuffled = shuffleArray([...sortCorrectOrder]);
+
+  const area = document.getElementById('sort-area');
+  document.getElementById('sort-result').className = 'game-result';
+  document.getElementById('sort-score').textContent = '';
+
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+  area.innerHTML = shuffled.map((line, i) =>
+    '<div class="sort-item" draggable="true" data-idx="' + i + '">' +
+    '<span class="sort-handle">⋮⋮</span>' +
+    '<span class="sort-num"></span>' +
+    '<code>' + esc(line) + '</code></div>'
+  ).join('');
+
+  // Drag and drop
+  let dragEl = null;
+  area.querySelectorAll('.sort-item').forEach(item => {
+    item.addEventListener('dragstart', e => {
+      dragEl = item;
+      item.style.opacity = '0.4';
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => {
+      item.style.opacity = '1';
+      area.querySelectorAll('.sort-item').forEach(x => x.classList.remove('drag-over'));
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      if (dragEl && dragEl !== item) {
+        const all = [...area.querySelectorAll('.sort-item')];
+        const from = all.indexOf(dragEl);
+        const to = all.indexOf(item);
+        if (from < to) item.after(dragEl);
+        else item.before(dragEl);
+      }
+    });
+
+    // Touch support
+    let touchY = 0;
+    let placeholder = null;
+    item.addEventListener('touchstart', e => {
+      dragEl = item;
+      touchY = e.touches[0].clientY;
+      item.style.opacity = '0.6';
+    }, {passive: true});
+    item.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      area.querySelectorAll('.sort-item').forEach(x => x.classList.remove('drag-over'));
+      if (target && target.closest('.sort-item') && target.closest('.sort-item') !== dragEl) {
+        target.closest('.sort-item').classList.add('drag-over');
+      }
+    }, {passive: false});
+    item.addEventListener('touchend', e => {
+      item.style.opacity = '1';
+      const touch = e.changedTouches[0];
+      const target = document.elementFromPoint(touch.clientX, touch.clientY);
+      area.querySelectorAll('.sort-item').forEach(x => x.classList.remove('drag-over'));
+      if (target && target.closest('.sort-item') && target.closest('.sort-item') !== dragEl) {
+        const dropTarget = target.closest('.sort-item');
+        const all = [...area.querySelectorAll('.sort-item')];
+        const from = all.indexOf(dragEl);
+        const to = all.indexOf(dropTarget);
+        if (from < to) dropTarget.after(dragEl);
+        else dropTarget.before(dragEl);
+      }
+      dragEl = null;
+    });
+  });
+}
+
+function checkSortGame() {
+  if (!sortCorrectOrder.length) { alert('Сначала нажми Старт'); return; }
+
+  const items = document.querySelectorAll('#sort-area .sort-item');
+  let correct = 0;
+
+  items.forEach((item, i) => {
+    const text = item.querySelector('code').textContent.trim();
+    const num = item.querySelector('.sort-num');
+    num.textContent = (i + 1);
+
+    item.classList.remove('correct-pos', 'wrong-pos');
+    if (text === sortCorrectOrder[i]) {
+      item.classList.add('correct-pos');
+      correct++;
+    } else {
+      item.classList.add('wrong-pos');
+    }
+  });
+
+  const total = sortCorrectOrder.length;
+  const res = document.getElementById('sort-result');
+  if (correct === total) {
+    res.className = 'game-result show success';
+    res.textContent = '🎉 Идеально! Все ' + total + ' строк на месте!';
+  } else {
+    res.className = 'game-result show fail';
+    res.textContent = '✗ ' + correct + ' / ' + total + ' — зелёные на месте, красные нет';
+  }
+  document.getElementById('sort-score').textContent = correct + '/' + total;
+}
+
+initSortGame();
 </script>
 </body>
 </html>
