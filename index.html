@@ -211,6 +211,18 @@
 
     .section-title { font-size: 16px; }
     .ann-num { min-width: 28px; }
+
+    .diff-grid { grid-template-columns: 1fr; }
+    .diff-panel { font-size: 10px; }
+    .diff-line { padding: 0 8px; }
+    .diff-num { min-width: 22px; font-size: 9px; }
+
+    #guess-area div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; }
+
+    .sort-item { padding: 6px 10px 6px 30px; font-size: 11px; }
+    .sort-handle { left: 8px; }
+
+    .flash-opt { font-size: 11px; padding: 8px 12px; }
   }
 
   /* ── GAME ── */
@@ -504,6 +516,34 @@
   .sort-item.correct-pos .sort-num { display: block; color: var(--accent2); }
   .sort-item.wrong-pos .sort-num { display: block; color: var(--danger); }
   .sort-item.correct-pos .sort-handle, .sort-item.wrong-pos .sort-handle { display: none; }
+
+  .diff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  @media(max-width:700px) { .diff-grid { grid-template-columns: 1fr; } }
+  .diff-panel-w { background: var(--code-bg); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .diff-panel-h { padding: 8px 12px; background: var(--surface2); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 700; }
+  .diff-panel-h .df { color: #ff9e64; }
+  .diff-panel-h .dt { color: var(--accent3); }
+  .diff-body-w { padding: 8px 0; overflow-x: auto; font-size: clamp(10px,2vw,12px); line-height: 1.8; }
+  .dl { display: flex; padding: 0 12px; min-height: 20px; }
+  .dn { min-width: 26px; color: #3d4560; text-align: right; padding-right: 8px; user-select: none; flex-shrink: 0; font-size: 10px; }
+  .dc { white-space: pre; flex: 1; }
+  .dl-k .dc { color: var(--muted); }
+  .dl-c { background: rgba(255,184,79,.07); }
+  .dl-c .dc { color: #ffb84f; }
+  .dl-d { background: rgba(255,79,107,.07); }
+  .dl-d .dc { color: #ff4f6b; text-decoration: line-through; opacity: .7; }
+  .dl-a { background: rgba(0,250,154,.07); }
+  .dl-a .dc { color: #00fa9a; }
+  .dl-e { min-height:20px; background: rgba(100,100,100,.03); }
+  .dl-e .dc { color: #2a3045; }
+  .ho { background: rgba(255,79,107,.18); border-radius: 2px; padding: 0 2px; color: #ff9e64; text-decoration: line-through; }
+  .hn { background: rgba(0,250,154,.18); border-radius: 2px; padding: 0 2px; color: var(--accent3); }
+  .diff-summary { margin-top: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; font-size: 11px; line-height: 1.8; color: #b0b8cc; }
+  .diff-summary strong { color: var(--text); }
+  .tg { display: inline-block; font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 700; margin-right: 3px; }
+  .tg-c { background: rgba(255,184,79,.15); color: #ffb84f; }
+  .tg-d { background: rgba(255,79,107,.15); color: #ff4f6b; }
+  .tg-a { background: rgba(0,250,154,.15); color: #00fa9a; }
 </style>
 </head>
 <body>
@@ -516,6 +556,7 @@
     <button onclick="showSection('game')">🎮 Игра</button>
     <button onclick="showSection('db')">🗄️ Таблицы БД</button>
     <button onclick="showSection('setup')">🖱️ Настройка</button>
+    <button onclick="showSection('diff')">🔄 Сравнение</button>
   </nav>
 </header>
 
@@ -540,11 +581,13 @@
 <!-- ════════════ GAME ════════════ -->
 <div class="section" id="sec-game">
   <div class="section-title">Игры для запоминания кода</div>
-  <div class="section-sub">Два режима — выбери вкладку</div>
+  <div class="section-sub">Четыре режима — выбери вкладку</div>
 
   <div class="tabs" style="margin-bottom:16px">
     <button class="tab-btn active" onclick="switchGameMode('fill')">✏️ Впиши пропуск</button>
     <button class="tab-btn" onclick="switchGameMode('sort')">🔀 Собери метод</button>
+    <button class="tab-btn" onclick="switchGameMode('whatchange')">🔄 Что изменить?</button>
+    <button class="tab-btn" onclick="switchGameMode('guess')">🎯 Угадай файл</button>
   </div>
 
   <!-- GAME 1: Fill blanks -->
@@ -576,6 +619,28 @@
     <div class="notice" style="font-size:11px;margin-bottom:12px">Перетаскивай строки кода в правильном порядке. Показаны только строки, которые пишутся вручную.</div>
     <div class="game-area" id="sort-area"><span style="color:var(--muted)">Выбери файл и метод, нажми Старт</span></div>
     <div class="game-result" id="sort-result"></div>
+  </div>
+
+  <!-- GAME 3: What to change? -->
+  <div id="game-whatchange" style="display:none">
+    <div class="game-controls">
+      <button class="btn-primary" onclick="startWhatChange()">▶ Старт (10 вопросов)</button>
+      <div class="game-score" id="wc-score"></div>
+    </div>
+    <div class="notice" style="font-size:11px;margin-bottom:12px">Показана строка из ProductList/Card/Edit. Выбери: оставить, заменить или удалить при переносе в OrderList/Card/Edit.</div>
+    <div class="game-area" id="wc-area"><span style="color:var(--muted)">Нажми Старт</span></div>
+    <div class="game-result" id="wc-result"></div>
+  </div>
+
+  <!-- GAME 4: Guess the file -->
+  <div id="game-guess" style="display:none">
+    <div class="game-controls">
+      <button class="btn-primary" onclick="startGuess()">▶ Старт (10 вопросов)</button>
+      <div class="game-score" id="guess-score"></div>
+    </div>
+    <div class="notice" style="font-size:11px;margin-bottom:12px">Показана строка кода — угадай из какого она файла. Только строки, которые пишутся вручную.</div>
+    <div class="game-area" id="guess-area"><span style="color:var(--muted)">Нажми Старт</span></div>
+    <div class="game-result" id="guess-result"></div>
   </div>
 </div>
 
@@ -618,6 +683,22 @@
   </div>
 
   <div id="setup-content"></div>
+</div>
+
+<!-- ════════════ DIFF ════════════ -->
+<div class="section" id="sec-diff">
+  <div class="section-title">Товары → Заказы: сравнение</div>
+  <div class="section-sub">Слева — файл товаров, справа — что получается для заказов. Цвет показывает что менять.</div>
+
+  <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;font-size:11px">
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:rgba(107,118,144,.3);display:inline-block"></span>Без изменений</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:rgba(255,184,79,.3);display:inline-block"></span>Замена</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:rgba(255,79,107,.3);display:inline-block"></span>Удалить</span>
+    <span style="display:flex;align-items:center;gap:5px"><span style="width:12px;height:12px;border-radius:3px;background:rgba(0,250,154,.3);display:inline-block"></span>Добавить</span>
+  </div>
+
+  <div class="tabs" id="diff-tabs"></div>
+  <div id="diff-content"></div>
 </div>
 </main>
 
@@ -713,18 +794,31 @@ namespace ObuvApp
     }
 }`,
     annotations: [
-      [6,'public partial class Login : Form','partial — часть класса в Designer.cs, наследует Form'],
-      [13,'private void Login_Load(...)','Срабатывает при открытии формы'],
-      [15,'usersTableAdapter.Fill(obuvDBDataSet.Users);','Загружаем всех пользователей из БД в DataSet'],
-      [18,'private void btnEnter_Click(...)','Обработчик кнопки "Войти"'],
-      [21,'var dt = usersTableAdapter.GetDataByLogPass(...)','Запрос в БД: найти пользователя по логину и паролю'],
-      [23,'if (dt.Count == 0)','Если ничего не нашли — неверные данные'],
-      [31,'OpenMain(dt[0].FullName, dt[0].RoleName);','Берём ФИО и роль первого (единственного) результата'],
-      [40,'OpenMain("Гость", "Гость");','Гость — не проверяем БД, даём роль "Гость"'],
-      [45,'MainForm mf = new MainForm(fullName, roleName);','Создаём главную форму, передаём имя и роль'],
-      [46,'Hide();','Прячем окно Login (не закрываем!)'],
-      [47,'mf.FormClosed += (s, e) => { tbPass.Text = ""; Show(); };','Когда MainForm закроется — чистим пароль и показываем Login снова'],
-      [48,'mf.Show();','Открываем главную форму'],
+      [1,'using System;','Базовые классы .NET (Exception, Convert и т.д.)'],
+      [2,'using System.Windows.Forms;','Всё для WinForms: Form, Button, TextBox, MessageBox'],
+      [4,'namespace ObuvApp','Пространство имён — все классы проекта внутри'],
+      [6,'public partial class Login : Form','partial — вторая часть в Designer.cs; наследует Form'],
+      [8,'public Login()','Конструктор — вызывается при new Login()'],
+      [10,'InitializeComponent();','Создаёт все элементы формы (кнопки, поля) из Designer.cs'],
+      [13,'private void Login_Load(object sender, EventArgs e)','Событие Load — срабатывает когда форма открывается'],
+      [15,'usersTableAdapter.Fill(obuvDBDataSet.Users);','Загружаем ВСЕ записи из таблицы Users в память'],
+      [18,'private void btnEnter_Click(object sender, EventArgs e)','Клик по кнопке "Войти" — VS создал сигнатуру, мы пишем тело'],
+      [20,'try','Начало блока обработки ошибок'],
+      [22,'var dt = usersTableAdapter.GetDataByLogPass(tbLogin.Text, tbPass.Text);','Запрос к БД: ищем пользователя по логину И паролю одновременно'],
+      [24,'if (dt.Count == 0)','Если запрос вернул 0 строк — такого пользователя нет'],
+      [26,'MessageBox.Show("Неверный логин или пароль", "Ошибка",','Показываем всплывающее окно с ошибкой'],
+      [27,'MessageBoxButtons.OK, MessageBoxIcon.Error);','OK — одна кнопка, Error — красный значок'],
+      [28,'return;','Выходим из метода — дальше не идём'],
+      [31,'OpenMain(dt[0].FullName, dt[0].RoleName);','dt[0] — первая (единственная) строка результата; берём ФИО и роль'],
+      [33,'catch (Exception ex)','Если что-то сломалось (нет подключения к БД и т.д.)'],
+      [35,'MessageBox.Show("Ошибка подключения:\\n" + ex.Message, "Ошибка",','\\n — перенос строки в сообщении; ex.Message — текст ошибки'],
+      [40,'private void btnGuest_Click(object sender, EventArgs e)','Клик по кнопке "Гость"'],
+      [42,'OpenMain("Гость", "Гость");','Входим без проверки БД — передаём роль "Гость"'],
+      [45,'private void OpenMain(string fullName, string roleName)','Вспомогательный метод — открывает главное окно'],
+      [47,'MainForm mf = new MainForm(fullName, roleName);','Создаём экземпляр MainForm, передаём имя и роль'],
+      [48,'Hide();','Прячем Login (не Close — иначе приложение закроется!)'],
+      [49,'mf.FormClosed += (s, e) => { tbPass.Text = ""; Show(); };','Лямбда: когда MainForm закроется — очищаем пароль и показываем Login'],
+      [50,'mf.Show();','Показываем главное окно']
     ]
   },
   {
@@ -785,17 +879,34 @@ namespace ObuvApp
     }
 }`,
     annotations: [
-      [8,'private readonly string fullName;','readonly = нельзя изменить после конструктора'],
-      [10,'private ProductList ucProducts;','Храним ссылки на UserControl-ы, чтобы не пересоздавать'],
-      [13,'public MainForm(string fullName, string roleName)','Конструктор принимает имя и роль из Login'],
-      [22,'lblUsername.Text = fullName;','Показываем имя в шапке формы'],
-      [24,'bool isManager = roleName == "Менеджер" || roleName == "Администратор";','Менеджер ИЛИ Администратор — видят кнопку заказов'],
-      [25,'btnOrders.Visible = isManager;','Скрываем/показываем кнопку по роли'],
-      [27,'ucProducts = new ProductList(roleName);','Создаём список товаров, передаём роль'],
-      [28,'ShowPage(ucProducts, false);','Показываем товары без кнопки "Назад"'],
-      [32,'DownPanel.Controls.Clear();','Очищаем нижнюю панель перед добавлением нового экрана'],
-      [33,'uc.Dock = DockStyle.Fill;','UserControl занимает всё доступное пространство'],
-      [40,'if (ucOrders == null) ucOrders = new OrderList(roleName);','Создаём список заказов один раз (лениво)'],
+      [1,'using System;','Базовые классы'],
+      [2,'using System.Windows.Forms;','WinForms классы'],
+      [6,'public partial class MainForm : Form','Главная форма приложения'],
+      [8,'private readonly string fullName;','readonly — нельзя изменить после конструктора; хранит ФИО'],
+      [9,'private readonly string roleName;','Роль пользователя — определяет доступ к разделам'],
+      [10,'private ProductList ucProducts;','Ссылка на UserControl списка товаров'],
+      [11,'private OrderList ucOrders;','Ссылка на UserControl списка заказов (создаётся лениво)'],
+      [13,'public MainForm(string fullName, string roleName)','Конструктор — получает данные из Login'],
+      [16,'this.fullName = fullName;','this. — отличает поле класса от параметра с тем же именем'],
+      [17,'this.roleName = roleName;','Сохраняем роль для дальнейших проверок'],
+      [20,'private void MainForm_Load(object sender, EventArgs e)','При открытии формы — настраиваем интерфейс под роль'],
+      [22,'lblUsername.Text = fullName;','Показываем имя пользователя в шапке'],
+      [24,'bool isManager = roleName == "Менеджер" || roleName == "Администратор";','true если Менеджер ИЛИ Администратор — оба видят заказы'],
+      [25,'btnOrders.Visible = isManager;','Кнопка заказов видна только менеджеру/админу'],
+      [27,'ucProducts = new ProductList(roleName);','Создаём список товаров, передаём роль для настройки прав'],
+      [28,'ShowPage(ucProducts, false);','Показываем товары; false = кнопка "Назад" скрыта'],
+      [31,'private void ShowPage(UserControl uc, bool canBack)','Универсальный метод переключения экранов'],
+      [33,'DownPanel.Controls.Clear();','Очищаем панель от предыдущего экрана'],
+      [34,'uc.Dock = DockStyle.Fill;','UserControl растягивается на всю панель'],
+      [35,'DownPanel.Controls.Add(uc);','Добавляем новый экран на панель'],
+      [36,'btnBack.Visible = canBack;','Показываем кнопку "Назад" только если можно вернуться'],
+      [39,'private void btnOrders_Click(object sender, EventArgs e)','Клик по кнопке "Заказы"'],
+      [41,'if (ucOrders == null) ucOrders = new OrderList(roleName);','Ленивая инициализация: создаём OrderList только при первом клике'],
+      [42,'ShowPage(ucOrders, true);','Показываем заказы; true = кнопка "Назад" видна'],
+      [45,'private void btnBack_Click(object sender, EventArgs e)','Клик по кнопке "Назад"'],
+      [47,'ShowPage(ucProducts, false);','Возвращаемся к товарам'],
+      [50,'private void btnExit_Click(object sender, EventArgs e)','Клик по кнопке "Выход"'],
+      [52,'Close();','Закрываем MainForm → срабатывает FormClosed → Login снова покажется']
     ]
   },
   {
@@ -942,21 +1053,74 @@ namespace ObuvApp
     }
 }`,
     annotations: [
-      [7,'public partial class ProductList : UserControl','UserControl — встраиваемый компонент (не отдельное окно)'],
-      [22,'IsAdmin = roleName == "Администратор";','Флаг роли — чтобы не сравнивать строки каждый раз'],
-      [23,'IsManager = roleName == "Менеджер" || IsAdmin;','Администратор тоже является менеджером (по правам)'],
-      [25,'pnlTools.Visible = IsManager;','Панель поиска/фильтров скрыта для клиента и гостя'],
-      [26,'btnAdd.Visible = IsAdmin;','Кнопки добавления/удаления — только для администратора'],
-      [31,'productsTableAdapter.Fill(obuvDBDataSet.Products);','Загружаем данные из БД в локальный DataSet'],
-      [33,'productsBindingSource.DataSource = obuvDBDataSet.Products;','Связываем источник данных для фильтрации/сортировки'],
-      [55,'int width = pnlCards.ClientSize.Width - pnlCards.Padding.Horizontal - 20;','Ширина карточки = ширина панели минус отступы'],
-      [58,'DataRowView row = (DataRowView)productsBindingSource[i];','Приводим объект к DataRowView для доступа к полям'],
-      [59,'ProductCard card = new ProductCard();','Создаём новую карточку товара'],
-      [63,'card.CardClicked += Card_CardClicked;','Подписываемся на событие клика по карточке'],
-      [85,'filter = "ProductName LIKE \'%" + q + "%\'";','Фильтр по части названия — LIKE с %'],
-      [91,'productsBindingSource.Filter = filter;','Применяем фильтр к источнику данных'],
-      [93,'productsBindingSource.Sort = "StockQty ASC";','Сортировка по остатку: ASC = возрастание'],
-      [104,'int used = productsTableAdapter.CountProductInOrders(selectedProductId) ?? 0;','Проверяем: товар используется в заказах? ?? 0 — если null, то 0'],
+      [7,'public partial class ProductList : UserControl','UserControl — встраивается в панель MainForm, не отдельное окно'],
+      [9,'private readonly string roleName;','Роль — для определения прав (что показывать/скрывать)'],
+      [10,'private bool IsAdmin;','Флаг: true если Администратор'],
+      [11,'private bool IsManager;','Флаг: true если Менеджер ИЛИ Администратор'],
+      [12,'private int selectedProductId;','Id выбранного товара — для редактирования/удаления'],
+      [14,'public ProductList(string roleName)','Конструктор: получаем роль из MainForm'],
+      [20,'private void ProductList_Load(object sender, EventArgs e)','При загрузке — настройка прав и загрузка данных'],
+      [22,'IsAdmin = roleName == "Администратор";','Только администратор может добавлять/удалять'],
+      [23,'IsManager = roleName == "Менеджер" || IsAdmin;','Менеджер видит фильтры; Админ тоже (он \"старше\")'],
+      [25,'pnlTools.Visible = IsManager;','Панель поиска/фильтров скрыта для гостя и клиента'],
+      [26,'btnAdd.Visible = IsAdmin;','Кнопка "Добавить" — только для админа'],
+      [27,'btnDel.Visible = IsAdmin;','Кнопка "Удалить" — только для админа'],
+      [31,'productsTableAdapter.Fill(obuvDBDataSet.Products);','Загружаем все товары из БД в DataSet'],
+      [32,'suppliersTableAdapter.Fill(obuvDBDataSet.Suppliers);','Загружаем поставщиков для фильтра'],
+      [33,'productsBindingSource.DataSource = obuvDBDataSet.Products;','Связываем BindingSource с таблицей — для фильтрации и сортировки'],
+      [34,'FillSuppliersCombo();','Заполняем выпадающий список поставщиков'],
+      [35,'cbSort.SelectedIndex = 0;','По умолчанию сортировка не выбрана (индекс 0)'],
+      [36,'RenderCards();','Отрисовываем карточки товаров'],
+      [45,'private void FillSuppliersCombo()','Заполнение ComboBox поставщиков вручную'],
+      [47,'cbSupplier.Items.Clear();','Очищаем старые элементы'],
+      [48,'cbSupplier.Items.Add("Все поставщики");','Первый пункт — показать всех'],
+      [49,'for (int i = 0; i < obuvDBDataSet.Suppliers.Count; i++)','Перебираем все строки таблицы Suppliers'],
+      [50,'cbSupplier.Items.Add(obuvDBDataSet.Suppliers[i].SupplierName);','Добавляем имя каждого поставщика в список'],
+      [51,'cbSupplier.SelectedIndex = 0;','Выбираем первый пункт (Все поставщики)'],
+      [54,'private void RenderCards()','Главный метод отрисовки — создаёт карточки товаров'],
+      [56,'pnlCards.Controls.Clear();','Очищаем панель от старых карточек'],
+      [57,'int width = pnlCards.ClientSize.Width - pnlCards.Padding.Horizontal - 20;','Ширина карточки = ширина панели минус отступы'],
+      [59,'for (int i = 0; i < productsBindingSource.Count; i++)','Перебираем отфильтрованные/отсортированные записи'],
+      [61,'DataRowView row = (DataRowView)productsBindingSource[i];','Приводим к DataRowView для доступа к полям по имени'],
+      [62,'ProductCard card = new ProductCard();','Создаём новую карточку'],
+      [63,'card.SetData(row);','Передаём данные строки в карточку'],
+      [64,'card.Width = width;','Устанавливаем ширину'],
+      [65,'card.Margin = new Padding(0, 0, 0, 8);','Отступ снизу 8px между карточками'],
+      [66,'card.CardClicked += Card_CardClicked;','Подписываемся на событие клика'],
+      [67,'pnlCards.Controls.Add(card);','Добавляем карточку на панель'],
+      [71,'private void Card_CardClicked(object sender, EventArgs e)','Обработчик клика по карточке'],
+      [73,'ProductCard card = (ProductCard)sender;','sender — это карточка, на которую кликнули'],
+      [74,'selectedProductId = card.ProductId;','Запоминаем Id для редактирования/удаления'],
+      [76,'if (!IsAdmin)','Если не админ — редактировать нельзя'],
+      [78,'MessageBox.Show("Редактирование доступно только администратору",','Информационное сообщение (не ошибка)'],
+      [80,'return;','Выходим — не открываем редактирование'],
+      [82,'OpenEdit(selectedProductId);','Открываем форму редактирования с этим Id'],
+      [85,'private void ViewChanged(object sender, EventArgs e)','Вызывается при изменении поиска/фильтра/сортировки'],
+      [87,'string filter = "";','Начинаем с пустого фильтра'],
+      [88,'string q = tbSearch.Text.Trim().Replace("\'", "\'\'" );','Берём текст поиска, обрезаем пробелы, экранируем кавычки'],
+      [90,'if (q.Length > 0)','Если что-то введено в поиск'],
+      [91,'filter = "ProductName LIKE \'%" + q + "%\'";','LIKE %текст% — ищет подстроку в названии'],
+      [93,'if (cbSupplier.SelectedIndex > 0)','Если выбран конкретный поставщик (не \"Все\")'],
+      [95,'if (filter.Length > 0) filter += " AND ";','Если уже есть условие — добавляем AND'],
+      [96,'filter += "SupplierName = \'" + cbSupplier.Text + "\'";','Фильтр по точному имени поставщика'],
+      [99,'productsBindingSource.Filter = filter;','Применяем составной фильтр к BindingSource'],
+      [101,'if (cbSort.SelectedIndex == 1) productsBindingSource.Sort = "StockQty ASC";','ASC = по возрастанию остатка'],
+      [102,'else if (cbSort.SelectedIndex == 2) productsBindingSource.Sort = "StockQty DESC";','DESC = по убыванию остатка'],
+      [103,'else productsBindingSource.Sort = "";','Без сортировки'],
+      [105,'RenderCards();','Перерисовываем карточки с новым фильтром'],
+      [108,'private void btnAdd_Click(object sender, EventArgs e) { OpenEdit(null); }','null = новый товар (не редактирование)'],
+      [112,'if (selectedProductId == 0) { MessageBox.Show("Выберите товар"); return; }','Если ничего не выбрано — предупреждение'],
+      [114,'int used = productsTableAdapter.CountProductInOrders(selectedProductId) ?? 0;','Проверяем: этот товар есть в заказах? ?? 0 = если null то 0'],
+      [115,'if (used > 0) { MessageBox.Show("Нельзя удалить: товар в заказе"); return; }','Нельзя удалить товар, если он в заказе (FK constraint)'],
+      [119,'productsTableAdapter.DeleteById(selectedProductId);','Удаляем товар по Id (запрос в DataSet)'],
+      [120,'selectedProductId = 0;','Сбрасываем выбор'],
+      [121,'productsTableAdapter.Fill(obuvDBDataSet.Products);','Перезагружаем данные из БД'],
+      [122,'RenderCards();','Перерисовываем карточки'],
+      [131,'private void OpenEdit(int? id)','Открывает форму редактирования/добавления'],
+      [133,'ProductEdit f = new ProductEdit(id);','Создаём форму, передаём id (null = добавление)'],
+      [134,'if (f.ShowDialog() == DialogResult.OK)','ShowDialog — модальное окно; ждём пока закроется'],
+      [136,'productsTableAdapter.Fill(obuvDBDataSet.Products);','Если сохранили — обновляем данные'],
+      [137,'RenderCards();','И перерисовываем карточки']
     ]
   },
   {
@@ -1035,18 +1199,52 @@ namespace ObuvApp
     }
 }`,
     annotations: [
-      [11,'public int ProductId { get; private set; }','Свойство: снаружи только читать, внутри можно изменить'],
-      [12,'public event EventHandler CardClicked;','Событие — другие формы подпишутся и узнают о клике'],
-      [20,'CardClicked?.Invoke(this, EventArgs.Empty);','?. — вызываем событие только если есть подписчики'],
-      [30,'decimal price = Convert.ToDecimal(row["Price"]);','Преобразуем объект из DataRow к нужному типу'],
-      [34,'lblHeader.Text = category + " | " + name;','Заголовок карточки: "Женская | Туфли"'],
-      [41,'decimal finalPrice = price * (100 - discount) / 100m;','Цена со скидкой: 1000 * (100-20)/100 = 800'],
-      [43,'lblPriceOld.Text = price.ToString("0.00");','Старая цена зачёркнутым шрифтом'],
-      [54,'if (stock == 0) bg = Color.LightSkyBlue;','Нет на складе → голубой фон'],
-      [55,'else if (discount > 15) bg = Color.MediumSpringGreen;','Скидка >15% → зелёный фон'],
-      [62,'string full = Path.Combine(Application.StartupPath, rel);','Полный путь к фото относительно папки приложения'],
-      [64,'productPic.Image = Image.FromStream(new MemoryStream(File.ReadAllBytes(full)));','Загружаем фото через MemoryStream — файл сразу освобождается'],
-      [66,'productPic.Image = Properties.Resources.picture;','Фото не найдено — показываем картинку-заглушку из ресурсов'],
+      [1,'using System;','Базовые классы'],
+      [2,'using System.Data;','DataRowView, DataRow и т.д.'],
+      [3,'using System.Drawing;','Color, Image, Bitmap — для работы с графикой'],
+      [4,'using System.IO;','File, Path, MemoryStream — чтение/запись файлов'],
+      [5,'using System.Windows.Forms;','WinForms элементы'],
+      [9,'public partial class ProductCard : UserControl','Карточка товара — встраивается в список'],
+      [11,'public int ProductId { get; private set; }','Свойство: снаружи только чтение, внутри — запись'],
+      [12,'public event EventHandler CardClicked;','Событие: ProductList подпишется через += и узнает о клике'],
+      [14,'public ProductCard()','Конструктор — VS создал при добавлении UserControl'],
+      [16,'InitializeComponent();','Создаёт все элементы из Designer.cs'],
+      [19,'private void Card_Click(object sender, EventArgs e)','Обработчик клика — назначен на панели/метки в Designer'],
+      [21,'CardClicked?.Invoke(this, EventArgs.Empty);','?. — вызываем ТОЛЬКО если кто-то подписался; this = эта карточка'],
+      [24,'public void SetData(DataRowView row)','Получаем строку данных из ProductList.RenderCards()'],
+      [26,'ProductId = Convert.ToInt32(row["ProductId"]);','Сохраняем Id для ProductList (чтобы знать что выбрали)'],
+      [28,'string category = row["CategoryName"].ToString();','Достаём категорию из строки ("Женская", "Мужская")'],
+      [29,'string name = row["ProductName"].ToString();','Название товара'],
+      [30,'decimal price = Convert.ToDecimal(row["Price"]);','Цена — decimal для точных денежных расчётов'],
+      [31,'int discount = Convert.ToInt32(row["Discount"]);','Скидка в процентах (0-100)'],
+      [32,'int stock = Convert.ToInt32(row["StockQty"]);','Остаток на складе'],
+      [34,'lblHeader.Text = category + " | " + name;','Заголовок: "Женская | Туфли"'],
+      [35,'lblDescription.Text = "Описание: " + row["Discription"];','Примечание: Discription — опечатка в БД, но так в задании'],
+      [36,'lblMan.Text = "Производитель: " + row["ManufacturerName"];','Производитель из справочника'],
+      [37,'lblSup.Text = "Поставщик: " + row["SupplierName"];','Поставщик из справочника'],
+      [38,'lblUnit.Text = "Единица измерения: " + row["UnitName"];','шт. или другая единица'],
+      [39,'lblStock.Text = "Количество на складе: " + stock;','Остаток'],
+      [41,'if (discount > 0)','Если есть скидка — показываем старую и новую цену'],
+      [43,'decimal finalPrice = price * (100 - discount) / 100m;','Формула: 1000 * (100-20)/100 = 800; m = decimal литерал'],
+      [44,'lblPriceOld.Visible = true;','Показываем зачёркнутую старую цену'],
+      [45,'lblPriceOld.Text = price.ToString("0.00");','Форматируем: 1000.00'],
+      [46,'lblPriceNew.Text = "Цена: " + finalPrice.ToString("0.00");','Новая цена со скидкой'],
+      [47,'lblDiscount.Text = "Скидка " + discount + "%";','Показываем процент скидки'],
+      [51,'lblPriceOld.Visible = false;','Нет скидки — прячем старую цену'],
+      [52,'lblPriceNew.Text = "Цена: " + price.ToString("0.00");','Обычная цена без скидки'],
+      [53,'lblDiscount.Text = "Действующая скидка";','Текст-заглушка'],
+      [56,'Color bg = Color.White;','По умолчанию белый фон'],
+      [57,'if (stock == 0) bg = Color.LightSkyBlue;','Нет на складе → голубой (приоритет выше)'],
+      [58,'else if (discount > 15) bg = Color.MediumSpringGreen;','Скидка больше 15% → зелёный'],
+      [59,'panelRoot.BackColor = bg;','Устанавливаем фон корневой панели'],
+      [60,'panelInfo.BackColor = bg;','Фон панели с информацией'],
+      [61,'panelPhoto.BackColor = bg;','Фон панели с фото'],
+      [62,'panelDiscount.BackColor = bg;','Фон панели со скидкой'],
+      [64,'string rel = row["PhotoPath"].ToString();','Относительный путь к фото из БД'],
+      [65,'string full = Path.Combine(Application.StartupPath, rel);','Полный путь: папка приложения + относительный путь'],
+      [67,'if (!string.IsNullOrEmpty(rel) && File.Exists(full))','Если путь не пустой И файл существует'],
+      [68,'productPic.Image = Image.FromStream(new MemoryStream(File.ReadAllBytes(full)));','Загружаем через MemoryStream чтобы файл не блокировался'],
+      [70,'productPic.Image = Properties.Resources.picture;','Фото не найдено — показываем заглушку из ресурсов проекта']
     ]
   },
   {
@@ -1141,22 +1339,57 @@ namespace ObuvApp
     }
 }`,
     annotations: [
-      [12,'private readonly int? productId;','int? — nullable int: может быть null (новый товар) или число (редактирование)'],
-      [13,'private string pendingSource;','Временный путь к новому фото до сохранения'],
-      [15,'public ProductEdit(int? id)','Если id == null → добавление, иначе → редактирование'],
-      [21,'categoriesTableAdapter.Fill(obuvDBDataSet.Categories);','Заполняем все справочники для выпадающих списков'],
-      [27,'productsBindingSource.Position = productsBindingSource.Find("ProductId", productId.Value);','Устанавливаем курсор на нужный товар по Id'],
-      [33,'productsBindingSource.AddNew();','Создаём новую пустую строку в DataSet'],
-      [41,'var rel = ((DataRowView)productsBindingSource.Current)["PhotoPath"].ToString();','Берём текущий путь к фото из активной строки'],
-      [42,'var full = pendingSource ?? (...);','?? — если pendingSource не null — берём его, иначе вычисляем путь'],
-      [52,'if (tbName.Text.Trim() == "")','Валидация: обрезаем пробелы и проверяем на пустоту'],
-      [62,'var rel = "images\\\\" + Guid.NewGuid().ToString("N") + ".png";','Уникальное имя файла через GUID — исключает совпадения'],
-      [63,'using (var src = Image.FromFile(pendingSource))','using — автоматически освобождает ресурсы после блока'],
-      [64,'using (var bmp = new Bitmap(src, 300, 200))','Масштабируем картинку до 300x200px'],
-      [69,'File.Delete(Path.Combine(Application.StartupPath, old));','Удаляем старое фото при замене — экономим место'],
-      [71,'productsBindingSource.EndEdit();','Применяем изменения из элементов управления в DataSet'],
-      [72,'productsTableAdapter.Update(obuvDBDataSet.Products);','Сохраняем все изменения DataSet в базу данных'],
-      [73,'DialogResult = DialogResult.OK;','Сообщаем вызывающей форме, что сохранение прошло успешно'],
+      [1,'using System;','Базовые классы'],
+      [2,'using System.Data;','DataRowView'],
+      [3,'using System.Drawing;','Image, Bitmap'],
+      [4,'using System.Drawing.Imaging;','ImageFormat.Png для сохранения'],
+      [5,'using System.IO;','File, Path, Directory — работа с файлами'],
+      [6,'using System.Windows.Forms;','Form, DialogResult и т.д.'],
+      [10,'public partial class ProductEdit : Form','Форма редактирования/добавления товара (модальная)'],
+      [12,'private readonly int? productId;','int? — nullable: null = добавление, число = редактирование'],
+      [13,'private string pendingSource;','Путь к выбранному новому фото (до сохранения)'],
+      [15,'public ProductEdit(int? id) { InitializeComponent(); productId = id; }','Конструктор в одну строку; сохраняем id'],
+      [17,'private void ProductEdit_Load(object sender, EventArgs e)','При открытии — загружаем все справочники'],
+      [21,'categoriesTableAdapter.Fill(obuvDBDataSet.Categories);','Загружаем категории для ComboBox'],
+      [22,'manufacturersTableAdapter.Fill(obuvDBDataSet.Manufacturers);','Производители для ComboBox'],
+      [23,'suppliersTableAdapter.Fill(obuvDBDataSet.Suppliers);','Поставщики для ComboBox'],
+      [24,'unitsTableAdapter.Fill(obuvDBDataSet.Units);','Единицы измерения для ComboBox'],
+      [25,'productsTableAdapter.Fill(obuvDBDataSet.Products);','Сами товары — для навигации к нужному'],
+      [27,'if (productId.HasValue)','HasValue = есть значение (не null) = редактирование'],
+      [29,'productsBindingSource.Position = productsBindingSource.Find("ProductId", productId.Value);','Находим товар по Id и ставим курсор на него — поля заполнятся'],
+      [30,'tbId.Visible = true;','Показываем поле Id (только для чтения)'],
+      [34,'productsBindingSource.AddNew();','Создаём пустую строку — поля пустые для заполнения'],
+      [35,'tbId.Visible = false;','Прячем Id — у нового товара его ещё нет'],
+      [37,'ShowPhoto();','Показываем текущее фото (или заглушку)'],
+      [42,'private void ShowPhoto()','Загрузка и показ фото товара'],
+      [44,'var rel = ((DataRowView)productsBindingSource.Current)["PhotoPath"].ToString();','Берём путь из текущей строки BindingSource'],
+      [45,'var full = pendingSource ?? (rel == "" ? "" : Path.Combine(Application.StartupPath, rel));','?? — если выбрали новое фото, берём его; иначе — из БД'],
+      [46,'pbPhoto.Image = File.Exists(full)','Тернарный оператор: файл есть?'],
+      [47,'? Image.FromStream(new MemoryStream(File.ReadAllBytes(full)))','Да — загружаем через MemoryStream'],
+      [48,': Properties.Resources.picture;','Нет — заглушка'],
+      [51,'private void btnChoosePhoto_Click(object sender, EventArgs e)','Клик по "Выбрать фото"'],
+      [53,'if (openFileDialog.ShowDialog() == DialogResult.OK)','Открываем диалог выбора файла'],
+      [54,'{ pendingSource = openFileDialog.FileName; ShowPhoto(); }','Сохраняем путь и обновляем превью'],
+      [57,'private void btnSave_Click(object sender, EventArgs e)','Клик по "Сохранить"'],
+      [59,'if (tbName.Text.Trim() == "") { MessageBox.Show("Укажите наименование"); return; }','Валидация: название обязательно'],
+      [60,'if (tbArticle.Text.Trim() == "") { MessageBox.Show("Укажите артикул"); return; }','Валидация: артикул обязателен'],
+      [64,'var row = (DataRowView)productsBindingSource.Current;','Текущая строка для записи пути фото'],
+      [65,'if (pendingSource != null)','Если выбрали новое фото'],
+      [67,'var dir = Path.Combine(Application.StartupPath, "images");','Папка для фото'],
+      [68,'Directory.CreateDirectory(dir);','Создаём папку если не существует'],
+      [69,'var rel = "images\\\\" + Guid.NewGuid().ToString("N") + ".png";','GUID — уникальное имя без дефисов + .png'],
+      [70,'using (var src = Image.FromFile(pendingSource))','using — автоосвобождение ресурса после блока'],
+      [71,'using (var bmp = new Bitmap(src, 300, 200))','Масштабируем до 300x200 пикселей'],
+      [72,'bmp.Save(Path.Combine(Application.StartupPath, rel), ImageFormat.Png);','Сохраняем как PNG'],
+      [74,'var old = row["PhotoPath"].ToString();','Старый путь к фото'],
+      [75,'if (old != "" && File.Exists(Path.Combine(Application.StartupPath, old)))','Если старое фото существует'],
+      [76,'File.Delete(Path.Combine(Application.StartupPath, old));','Удаляем старое фото — экономим место'],
+      [77,'row["PhotoPath"] = rel;','Записываем новый путь в строку DataSet'],
+      [79,'productsBindingSource.EndEdit();','Фиксируем изменения из контролов в DataSet'],
+      [80,'productsTableAdapter.Update(obuvDBDataSet.Products);','Отправляем все изменения в БД'],
+      [81,'DialogResult = DialogResult.OK;','Сигнал ProductList: сохранение успешно'],
+      [82,'Close();','Закрываем форму'],
+      [86,'private void btnCancel_Click(object sender, EventArgs e) { DialogResult = DialogResult.Cancel; Close(); }','Отмена — закрываем без сохранения']
     ]
   },
   {
@@ -1272,15 +1505,52 @@ namespace ObuvApp
     }
 }`,
     annotations: [
-      [21,'IsAdmin = roleName == "Администратор";','Только администратор видит кнопки редактирования заказов'],
-      [22,'pnlTools.Visible = IsAdmin;','Менеджер только смотрит — панель инструментов скрыта'],
-      [40,'for (int i = 0; i < obuvDBDataSet.PickupPoints.Count; i++)','Линейный поиск по пунктам выдачи по Id'],
-      [41,'if (obuvDBDataSet.PickupPoints[i].PickupPointsId == pickupPointId)','Находим нужный пункт и возвращаем его адрес'],
-      [54,'string address = GetAddress(Convert.ToInt32(row["PickupPointId"]));','Для каждого заказа ищем адрес пункта выдачи'],
-      [56,'UcOrderCard card = new UcOrderCard();','Создаём карточку заказа (UserControl)'],
-      [57,'card.SetData(row, address);','Передаём данные строки + адрес в карточку'],
-      [84,'ordersTableAdapter.DeteteItemsByOrderId(selectedOrderId);','Сначала удаляем строки из OrderItems (FK!)'],
-      [85,'ordersTableAdapter.DeleteById(selectedOrderId);','Потом удаляем сам заказ из Orders'],
+      [7,'public partial class OrderList : UserControl','Список заказов — аналог ProductList'],
+      [9,'private readonly string roleName;','Роль для проверки прав'],
+      [10,'private bool IsAdmin;','Только админ может редактировать/удалять заказы'],
+      [11,'private int selectedOrderId;','Id выбранного заказа'],
+      [13,'public OrderList(string roleName)','Конструктор — получаем роль из MainForm'],
+      [19,'private void OrderList_Load(object sender, EventArgs e)','Загрузка — аналог ProductList_Load'],
+      [21,'IsAdmin = roleName == "Администратор";','Только админ (менеджер НЕ может редактировать заказы)'],
+      [22,'pnlTools.Visible = IsAdmin;','Панель кнопок видна только админу'],
+      [26,'ordersTableAdapter.Fill(obuvDBDataSet.Orders);','Загружаем все заказы'],
+      [27,'pickupPointsTableAdapter.Fill(obuvDBDataSet.PickupPoints);','Загружаем пункты выдачи (для адресов)'],
+      [28,'ordersBindingSource.DataSource = obuvDBDataSet.Orders;','Привязываем источник данных'],
+      [29,'RenderCards();','Отрисовываем карточки заказов'],
+      [37,'private string GetAddress(int pickupPointId)','Ищем адрес пункта выдачи по его Id'],
+      [39,'for (int i = 0; i < obuvDBDataSet.PickupPoints.Count; i++)','Перебираем все пункты выдачи'],
+      [40,'if (obuvDBDataSet.PickupPoints[i].PickupPointsId == pickupPointId)','Нашли нужный Id'],
+      [41,'return obuvDBDataSet.PickupPoints[i].Address;','Возвращаем адрес'],
+      [42,'return "";','Не нашли — пустая строка'],
+      [45,'private void RenderCards()','Отрисовка карточек — аналог ProductList.RenderCards()'],
+      [47,'pnlCards.Controls.Clear();','Очищаем панель'],
+      [48,'int width = pnlCards.ClientSize.Width - pnlCards.Padding.Horizontal - 20;','Ширина карточки'],
+      [50,'for (int i = 0; i < ordersBindingSource.Count; i++)','Перебираем заказы'],
+      [52,'DataRowView row = (DataRowView)ordersBindingSource[i];','Строка заказа'],
+      [53,'string address = GetAddress(Convert.ToInt32(row["PickupPointId"]));','Получаем адрес пункта выдачи'],
+      [55,'UcOrderCard card = new UcOrderCard();','Создаём карточку заказа'],
+      [56,'card.SetData(row, address);','Передаём данные + адрес (в отличие от ProductCard)'],
+      [57,'card.Width = width;','Ширина'],
+      [58,'card.Margin = new Padding(0, 0, 0, 8);','Отступ снизу'],
+      [59,'card.CardClicked += Card_CardClicked;','Подписка на клик'],
+      [60,'pnlCards.Controls.Add(card);','Добавляем на панель'],
+      [64,'private void Card_CardClicked(object sender, EventArgs e)','Клик по карточке заказа'],
+      [66,'UcOrderCard c = (UcOrderCard)sender;','Приводим sender к типу карточки'],
+      [67,'selectedOrderId = c.OrderId;','Запоминаем Id'],
+      [69,'if (!IsAdmin)','Не админ — нельзя редактировать'],
+      [75,'OpenEdit(selectedOrderId);','Открываем редактирование'],
+      [78,'private void btnAdd_Click(object sender, EventArgs e) { OpenEdit(null); }','null = новый заказ'],
+      [82,'if (selectedOrderId == 0) { MessageBox.Show("Выберите заказ"); return; }','Ничего не выбрано'],
+      [86,'ordersTableAdapter.DeteteItemsByOrderId(selectedOrderId);','СНАЧАЛА удаляем позиции заказа из OrderItems (FK!)'],
+      [87,'ordersTableAdapter.DeleteById(selectedOrderId);','ПОТОМ удаляем сам заказ'],
+      [88,'selectedOrderId = 0;','Сбрасываем выбор'],
+      [89,'ordersTableAdapter.Fill(obuvDBDataSet.Orders);','Перезагружаем данные'],
+      [90,'RenderCards();','Перерисовываем'],
+      [99,'private void OpenEdit(int? id)','Открытие формы редактирования заказа'],
+      [101,'OrderEdit f = new OrderEdit(id);','Создаём форму'],
+      [102,'if (f.ShowDialog() == DialogResult.OK)','Если сохранили'],
+      [104,'ordersTableAdapter.Fill(obuvDBDataSet.Orders);','Обновляем данные'],
+      [105,'RenderCards();','Перерисовываем']
     ]
   },
   {
@@ -1321,13 +1591,25 @@ namespace ObuvApp
     }
 }`,
     annotations: [
-      [9,'public int OrderId { get; private set; }','Снаружи читаем Id заказа — нужен OrderList для удаления'],
-      [10,'public event EventHandler CardClicked;','Событие клика — OrderList подпишется и откроет редактирование'],
-      [19,'CardClicked?.Invoke(this, EventArgs.Empty);','Вызываем событие; sender = this (сама карточка)'],
-      [22,'public void SetData(DataRowView row, string address)','Принимаем строку данных И уже готовый адрес (строку)'],
-      [24,'OrderId = Convert.ToInt32(row["OrderId"]);','Сохраняем Id чтобы OrderList мог удалить нужный заказ'],
-      [26,'lblArticle.Text = row["OrderActicle"].ToString();','OrderActicle — опечатка в имени поля, но в БД так же'],
-      [29,'Convert.ToDateTime(row["OrderDate"]).ToString("dd.MM.yyyy");','Форматируем дату: 21.05.2026 вместо 05/21/2026'],
+      [1,'using System;','Базовые классы'],
+      [2,'using System.Data;','DataRowView'],
+      [3,'using System.Windows.Forms;','UserControl'],
+      [7,'public partial class UcOrderCard : UserControl','Карточка заказа — аналог ProductCard'],
+      [9,'public int OrderId { get; private set; }','Id заказа — OrderList использует для удаления'],
+      [10,'public event EventHandler CardClicked;','Событие клика — OrderList подпишется'],
+      [12,'public UcOrderCard()','Конструктор'],
+      [14,'InitializeComponent();','Элементы из Designer'],
+      [17,'private void Card_Click(object sender, EventArgs e)','Обработчик клика на панели/метках'],
+      [19,'CardClicked?.Invoke(this, EventArgs.Empty);','Вызываем событие; ?. = только если есть подписчики'],
+      [22,'public void SetData(DataRowView row, string address)','Заполнение карточки; address передаётся отдельно (не из row!)'],
+      [24,'OrderId = Convert.ToInt32(row["OrderId"]);','Сохраняем Id заказа'],
+      [26,'lblArticle.Text = row["OrderActicle"].ToString();','Строка артикулов заказа (OrderActicle — опечатка в БД)'],
+      [27,'lblStatus.Text = "Статус: " + row["StatusName"];','Статус: Новый, Завершён и т.д.'],
+      [28,'lblAddress.Text = "Адрес: " + address;','Адрес пункта выдачи (получен через GetAddress)'],
+      [29,'lblOrderDate.Text = "Дата заказа: " +','Начало строки с датой'],
+      [30,'Convert.ToDateTime(row["OrderDate"]).ToString("dd.MM.yyyy");','Формат: 21.05.2026 (день.месяц.год)'],
+      [31,'lblDelivDate.Text = "Доставка: " +','Начало строки с датой доставки'],
+      [32,'Convert.ToDateTime(row["DeliveryDate"]).ToString("dd.MM.yyyy");','Тот же формат даты']
     ]
   },
   {
@@ -1385,18 +1667,29 @@ namespace ObuvApp
     }
 }`,
     annotations: [
-      [9,'private readonly int? orderId;','null = добавление нового заказа, число = редактирование'],
-      [11,'public OrderEdit(int? id)','Конструктор: получаем id от OrderList'],
-      [17,'orderStatusesTableAdapter.Fill(obuvDBDataSet.OrderStatuses);','Загружаем статусы для выпадающего списка cbStatus'],
-      [18,'pickupPointsTableAdapter.Fill(obuvDBDataSet.PickupPoints);','Загружаем пункты выдачи для выпадающего списка cbPickup'],
-      [21,'if (orderId.HasValue)','HasValue — проверка nullable: есть ли значение?'],
-      [23,'ordersBindingSource.Position = ordersBindingSource.Find("OrderId", orderId.Value);','Находим нужный заказ и перемещаем курсор на него'],
-      [28,'ordersBindingSource.AddNew();','Создаём пустую строку заказа для заполнения'],
-      [36,'if (tbArticle.Text.Trim() == "")','Проверяем что артикул заполнен (Trim убирает пробелы)'],
-      [37,'if (dtpDeliv.Value < dtpOrder.Value)','Дата доставки не может быть раньше даты заказа'],
-      [41,'ordersBindingSource.EndEdit();','Применяем все изменения из контролов в DataSet'],
-      [42,'ordersTableAdapter.Update(obuvDBDataSet.Orders);','Сохраняем изменения в базу данных SQL Server'],
-      [43,'DialogResult = DialogResult.OK;','Сигнал OrderList: сохранение успешно, обнови список'],
+      [1,'using System;','Базовые классы'],
+      [2,'using System.Data;','DataRowView'],
+      [3,'using System.Windows.Forms;','Form, DialogResult'],
+      [7,'public partial class OrderEdit : Form','Форма редактирования заказа — аналог ProductEdit, но проще'],
+      [9,'private readonly int? orderId;','null = новый заказ, число = редактирование'],
+      [11,'public OrderEdit(int? id) { InitializeComponent(); orderId = id; }','Конструктор — как в ProductEdit'],
+      [13,'private void OrderEdit_Load(object sender, EventArgs e)','При открытии — загружаем справочники'],
+      [17,'orderStatusesTableAdapter.Fill(obuvDBDataSet.OrderStatuses);','Статусы для ComboBox (Новый, Завершён)'],
+      [18,'pickupPointsTableAdapter.Fill(obuvDBDataSet.PickupPoints);','Пункты выдачи для ComboBox'],
+      [19,'ordersTableAdapter.Fill(obuvDBDataSet.Orders);','Заказы для навигации'],
+      [21,'if (orderId.HasValue)','Есть Id = редактирование'],
+      [23,'ordersBindingSource.Position = ordersBindingSource.Find("OrderId", orderId.Value);','Находим заказ и ставим курсор — поля заполнятся'],
+      [24,'tbId.Visible = true;','Показываем Id'],
+      [28,'ordersBindingSource.AddNew();','Новый пустой заказ'],
+      [29,'tbId.Visible = false;','Прячем Id'],
+      [35,'private void btnSave_Click(object sender, EventArgs e)','Сохранение заказа'],
+      [37,'if (tbArticle.Text.Trim() == "") { MessageBox.Show("Укажите артикул"); return; }','Валидация артикула'],
+      [38,'if (dtpDeliv.Value < dtpOrder.Value) { MessageBox.Show("Дата выдачи раньше даты заказа"); return; }','Дата доставки не может быть раньше даты заказа'],
+      [42,'ordersBindingSource.EndEdit();','Фиксируем изменения в DataSet'],
+      [43,'ordersTableAdapter.Update(obuvDBDataSet.Orders);','Сохраняем в БД'],
+      [44,'DialogResult = DialogResult.OK;','Сигнал OrderList: успешно'],
+      [45,'Close();','Закрываем'],
+      [49,'private void btnCancel_Click(object sender, EventArgs e) { DialogResult = DialogResult.Cancel; Close(); }','Отмена']
     ]
   }
 ];
@@ -2680,7 +2973,7 @@ showSection = function(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
   document.getElementById('sec-' + id).classList.add('active');
-  const idx = {code:0,annotated:1,game:2,db:3,setup:4}[id];
+  const idx = {code:0,annotated:1,game:2,db:3,setup:4,diff:5}[id];
   if (idx !== undefined) document.querySelectorAll('nav button')[idx].classList.add('active');
 };
 
@@ -2688,13 +2981,7 @@ showSection = function(id) {
 // ════════════════════════════════════════════════════
 //  GAME MODE SWITCH
 // ════════════════════════════════════════════════════
-function switchGameMode(mode) {
-  document.getElementById('game-fill').style.display = mode === 'fill' ? 'block' : 'none';
-  document.getElementById('game-sort').style.display = mode === 'sort' ? 'block' : 'none';
-  const tabs = document.querySelectorAll('#sec-game .tab-btn');
-  tabs.forEach(t => t.classList.remove('active'));
-  tabs[mode === 'fill' ? 0 : 1].classList.add('active');
-}
+// switchGameMode moved to bottom
 
 // ════════════════════════════════════════════════════
 //  GAME 2: SORT METHOD LINES
@@ -2940,6 +3227,410 @@ function checkSortGame() {
 }
 
 initSortGame();
+
+
+// ════════════════════════════════════════════════════
+//  DIFF SECTION — Товары → Заказы
+// ════════════════════════════════════════════════════
+const DIFF_PAIRS=[
+{title:"ProductList → OrderList",from:"ProductList.cs",to:"OrderList.cs",
+summary:'<span class="tg tg-d">УДАЛИТЬ</span> IsManager, FillSuppliersCombo(), ViewChanged() (поиск/фильтр/сортировка), CountProductInOrders<br><span class="tg tg-a">ДОБАВИТЬ</span> GetAddress() для пунктов выдачи, DeteteItemsByOrderId<br><span class="tg tg-c">ЗАМЕНИТЬ</span> product→order, Products→Orders, suppliers→pickupPoints',
+lines:[
+{t:"k",l:"using System;"},{t:"k",l:"using System.Data;"},{t:"k",l:"using System.Windows.Forms;"},{t:"k",l:""},{t:"k",l:"namespace ObuvApp"},{t:"k",l:"{"},
+{t:"c",l:"    public partial class ProductList : UserControl",r:"    public partial class OrderList : UserControl"},
+{t:"k",l:"    {"},{t:"k",l:"        private readonly string roleName;"},{t:"k",l:"        private bool IsAdmin;"},
+{t:"d",l:"        private bool IsManager;"},
+{t:"c",l:"        private int selectedProductId;",r:"        private int selectedOrderId;"},
+{t:"k",l:""},{t:"c",l:"        public ProductList(string roleName)",r:"        public OrderList(string roleName)"},
+{t:"k",l:"        {"},{t:"k",l:"            InitializeComponent();"},{t:"k",l:"            this.roleName = roleName;"},{t:"k",l:"        }"},{t:"k",l:""},
+{t:"c",l:"        private void ProductList_Load(...)",r:"        private void OrderList_Load(...)"},
+{t:"k",l:"        {"},{t:"k",l:"            IsAdmin = roleName == \"Администратор\";"},
+{t:"d",l:"            IsManager = roleName == \"Менеджер\" || IsAdmin;"},
+{t:"c",l:"            pnlTools.Visible = IsManager;",r:"            pnlTools.Visible = IsAdmin;"},
+{t:"d",l:"            btnAdd.Visible = IsAdmin;"},{t:"d",l:"            btnDel.Visible = IsAdmin;"},
+{t:"k",l:"            try"},{t:"k",l:"            {"},
+{t:"c",l:"                productsTA.Fill(ds.Products);",r:"                ordersTA.Fill(ds.Orders);"},
+{t:"c",l:"                suppliersTA.Fill(ds.Suppliers);",r:"                pickupPointsTA.Fill(ds.PickupPoints);"},
+{t:"c",l:"                productsBs.DataSource = ds.Products;",r:"                ordersBs.DataSource = ds.Orders;"},
+{t:"d",l:"                FillSuppliersCombo();"},{t:"d",l:"                cbSort.SelectedIndex = 0;"},
+{t:"k",l:"                RenderCards();"},{t:"k",l:"            }"},{t:"k",l:"            catch (...) { ... }"},{t:"k",l:"        }"},{t:"k",l:""},
+{t:"d",l:"        private void FillSuppliersCombo() { ... }"},{t:"d",l:"            // 7 строк — заполнение cbSupplier"},{t:"k",l:""},
+{t:"a",r:"        private string GetAddress(int ppId)"},{t:"a",r:"        {"},{t:"a",r:"            // цикл по PickupPoints, возврат Address"},{t:"a",r:"        }"},{t:"k",l:""},
+{t:"k",l:"        private void RenderCards()"},{t:"k",l:"        {"},
+{t:"k",l:"            pnlCards.Controls.Clear(); ..."},
+{t:"c",l:"            for (i < productsBs.Count)",r:"            for (i < ordersBs.Count)"},
+{t:"c",l:"                DataRowView row = (DataRowView)productsBs[i];",r:"                DataRowView row = (DataRowView)ordersBs[i];"},
+{t:"a",r:"                string address = GetAddress(row[\"PickupPointId\"]);"},
+{t:"c",l:"                ProductCard card = new ProductCard();",r:"                UcOrderCard card = new UcOrderCard();"},
+{t:"c",l:"                card.SetData(row);",r:"                card.SetData(row, address);"},
+{t:"k",l:"                card.CardClicked += Card_CardClicked; ..."},{t:"k",l:"        }"},{t:"k",l:""},
+{t:"k",l:"        private void Card_CardClicked(...)"},
+{t:"c",l:"            ProductCard card = (ProductCard)sender;",r:"            UcOrderCard c = (UcOrderCard)sender;"},
+{t:"c",l:"            selectedProductId = card.ProductId;",r:"            selectedOrderId = c.OrderId;"},
+{t:"k",l:"            if (!IsAdmin) { ... return; }"},
+{t:"c",l:"            OpenEdit(selectedProductId);",r:"            OpenEdit(selectedOrderId);"},{t:"k",l:"        }"},{t:"k",l:""},
+{t:"d",l:"        private void ViewChanged(...)"},{t:"d",l:"            // 15 строк — поиск, фильтр, сортировка"},{t:"k",l:""},
+{t:"k",l:"        private void btnAdd_Click(...) { OpenEdit(null); }"},{t:"k",l:""},
+{t:"k",l:"        private void btnDel_Click(...)"},
+{t:"c",l:"            if (selectedProductId == 0) ...",r:"            if (selectedOrderId == 0) ..."},
+{t:"d",l:"            int used = CountProductInOrders(...) ?? 0;"},{t:"d",l:"            if (used > 0) { ... return; }"},
+{t:"a",r:"                ordersTA.DeteteItemsByOrderId(selectedOrderId);"},
+{t:"c",l:"                productsTA.DeleteById(selectedProductId);",r:"                ordersTA.DeleteById(selectedOrderId);"},
+{t:"c",l:"                selectedProductId = 0;",r:"                selectedOrderId = 0;"},
+{t:"c",l:"                productsTA.Fill(ds.Products);",r:"                ordersTA.Fill(ds.Orders);"},
+{t:"k",l:"                RenderCards(); ... }"},{t:"k",l:""},
+{t:"c",l:"            ProductEdit f = new ProductEdit(id);",r:"            OrderEdit f = new OrderEdit(id);"},
+{t:"c",l:"                productsTA.Fill(ds.Products);",r:"                ordersTA.Fill(ds.Orders);"},
+{t:"k",l:"                RenderCards(); }"},{t:"k",l:"    }"},{t:"k",l:"}"},
+]},
+{title:"ProductCard → UcOrderCard",from:"ProductCard.cs",to:"UcOrderCard.cs",
+summary:'<span class="tg tg-d">УДАЛИТЬ</span> Всё про товар: цена, скидка, цвет, фото, using Drawing/IO (30+ строк)<br><span class="tg tg-a">ДОБАВИТЬ</span> 5 строк: артикулы, статус, адрес, даты<br><span class="tg tg-c">СКЕЛЕТ</span> Id, CardClicked, Invoke, SetData — одинаковый',
+lines:[
+{t:"k",l:"using System; using System.Data;"},{t:"d",l:"using System.Drawing; using System.IO;"},
+{t:"k",l:"using System.Windows.Forms;"},{t:"k",l:""},
+{t:"c",l:"    public partial class ProductCard : UserControl",r:"    public partial class UcOrderCard : UserControl"},
+{t:"c",l:"        public int ProductId { get; private set; }",r:"        public int OrderId { get; private set; }"},
+{t:"k",l:"        public event EventHandler CardClicked;"},
+{t:"c",l:"        public ProductCard()",r:"        public UcOrderCard()"},
+{t:"k",l:"            InitializeComponent();"},
+{t:"k",l:"        private void Card_Click(...)"},{t:"k",l:"            CardClicked?.Invoke(this, EventArgs.Empty);"},{t:"k",l:""},
+{t:"c",l:"        public void SetData(DataRowView row)",r:"        public void SetData(DataRowView row, string address)"},
+{t:"c",l:"            ProductId = Convert.ToInt32(row[\"ProductId\"]);",r:"            OrderId = Convert.ToInt32(row[\"OrderId\"]);"},
+{t:"k",l:""},
+{t:"d",l:"            string category = row[\"CategoryName\"]...;"},
+{t:"d",l:"            string name, decimal price, int discount, int stock"},
+{t:"d",l:"            lblHeader.Text = category + \" | \" + name;"},
+{t:"d",l:"            lblDescription, lblMan, lblSup, lblUnit, lblStock"},
+{t:"d",l:"            if (discount > 0) { finalPrice, lblPriceOld... }"},
+{t:"d",l:"            else { lblPriceNew, lblDiscount... }"},
+{t:"d",l:"            Color bg = ...; panelRoot.BackColor = bg; ..."},
+{t:"d",l:"            string rel = row[\"PhotoPath\"]...; productPic.Image = ..."},
+{t:"k",l:""},
+{t:"a",r:"            lblArticle.Text = row[\"OrderActicle\"].ToString();"},
+{t:"a",r:"            lblStatus.Text = \"Статус: \" + row[\"StatusName\"];"},
+{t:"a",r:"            lblAddress.Text = \"Адрес: \" + address;"},
+{t:"a",r:"            lblOrderDate.Text = \"Дата заказа: \" + ...ToString(\"dd.MM.yyyy\");"},
+{t:"a",r:"            lblDelivDate.Text = \"Доставка: \" + ...ToString(\"dd.MM.yyyy\");"},
+{t:"k",l:"        }"},{t:"k",l:"    }"},{t:"k",l:"}"},
+]},
+{title:"ProductEdit → OrderEdit",from:"ProductEdit.cs",to:"OrderEdit.cs",
+summary:'<span class="tg tg-d">УДАЛИТЬ</span> Всё про фото: ShowPhoto, btnChoosePhoto, pendingSource, сохранение файла, using Drawing/IO<br><span class="tg tg-a">ДОБАВИТЬ</span> Проверку дат (dtpDeliv < dtpOrder)<br><span class="tg tg-c">ЗАМЕНИТЬ</span> 5 справочников → 3, products→orders',
+lines:[
+{t:"k",l:"using System; using System.Data;"},
+{t:"d",l:"using System.Drawing; using System.Drawing.Imaging;"},{t:"d",l:"using System.IO;"},
+{t:"k",l:"using System.Windows.Forms;"},{t:"k",l:""},
+{t:"c",l:"    public partial class ProductEdit : Form",r:"    public partial class OrderEdit : Form"},
+{t:"c",l:"        private readonly int? productId;",r:"        private readonly int? orderId;"},
+{t:"d",l:"        private string pendingSource;"},
+{t:"c",l:"        public ProductEdit(int? id) { ...; productId = id; }",r:"        public OrderEdit(int? id) { ...; orderId = id; }"},
+{t:"k",l:""},
+{t:"c",l:"        private void ProductEdit_Load(...)",r:"        private void OrderEdit_Load(...)"},
+{t:"k",l:"            try"},{t:"k",l:"            {"},
+{t:"d",l:"                categoriesTA.Fill(ds.Categories);"},{t:"d",l:"                manufacturersTA.Fill(ds.Manufacturers);"},{t:"d",l:"                suppliersTA.Fill(ds.Suppliers);"},{t:"d",l:"                unitsTA.Fill(ds.Units);"},{t:"d",l:"                productsTA.Fill(ds.Products);"},
+{t:"a",r:"                orderStatusesTA.Fill(ds.OrderStatuses);"},{t:"a",r:"                pickupPointsTA.Fill(ds.PickupPoints);"},{t:"a",r:"                ordersTA.Fill(ds.Orders);"},
+{t:"k",l:""},
+{t:"c",l:"                if (productId.HasValue)",r:"                if (orderId.HasValue)"},
+{t:"c",l:"                    productsBs.Find(\"ProductId\", productId.Value);",r:"                    ordersBs.Find(\"OrderId\", orderId.Value);"},
+{t:"k",l:"                    tbId.Visible = true;"},
+{t:"c",l:"                    productsBs.AddNew();",r:"                    ordersBs.AddNew();"},
+{t:"k",l:"                    tbId.Visible = false;"},
+{t:"d",l:"                ShowPhoto();"},
+{t:"k",l:"            catch (...) { ... }"},{t:"k",l:"        }"},{t:"k",l:""},
+{t:"d",l:"        private void ShowPhoto() { ... 7 строк }"},
+{t:"d",l:"        private void btnChoosePhoto_Click(...) { ... 3 строки }"},{t:"k",l:""},
+{t:"k",l:"        private void btnSave_Click(...)"},
+{t:"c",l:"            if (tbName.Text.Trim() == \"\") { ... }",r:"            if (tbArticle.Text.Trim() == \"\") { ... }"},
+{t:"d",l:"            if (tbArticle.Text.Trim() == \"\") { ... }"},
+{t:"a",r:"            if (dtpDeliv.Value < dtpOrder.Value) { ... }"},
+{t:"k",l:"            try"},{t:"k",l:"            {"},
+{t:"d",l:"                var row = ...; if (pendingSource != null) {"},{t:"d",l:"                    // 10 строк: создание папки, GUID, сохранение фото"},{t:"d",l:"                }"},
+{t:"c",l:"                productsBs.EndEdit();",r:"                ordersBs.EndEdit();"},
+{t:"c",l:"                productsTA.Update(ds.Products);",r:"                ordersTA.Update(ds.Orders);"},
+{t:"k",l:"                DialogResult = DialogResult.OK;"},{t:"k",l:"                Close();"},
+{t:"k",l:"            catch (...) { ... }"},{t:"k",l:"        }"},{t:"k",l:""},
+{t:"k",l:"        private void btnCancel_Click(...) { ... }"},{t:"k",l:"    }"},{t:"k",l:"}"},
+]},
+];
+
+function initDiff(){
+  const tabs=document.getElementById('diff-tabs');
+  const ct=document.getElementById('diff-content');
+  DIFF_PAIRS.forEach((p,i)=>{
+    const b=document.createElement('button');
+    b.className='tab-btn'+(i===0?' active':'');
+    b.textContent=p.title;
+    b.onclick=()=>{
+      tabs.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active');
+      renderDiff(p,ct);
+    };
+    tabs.appendChild(b);
+  });
+  renderDiff(DIFF_PAIRS[0],ct);
+}
+
+function renderDiff(pair,ct){
+  const esc=s=>(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  let lh='',rh='',ln_l=0,ln_r=0;
+  pair.lines.forEach(line=>{
+    if(line.t==='k'){
+      ln_l++;ln_r++;
+      lh+=`<div class="dl dl-k"><span class="dn">${ln_l}</span><span class="dc">${esc(line.l)}&nbsp;</span></div>`;
+      rh+=`<div class="dl dl-k"><span class="dn">${ln_r}</span><span class="dc">${esc(line.l)}&nbsp;</span></div>`;
+    }else if(line.t==='c'){
+      ln_l++;ln_r++;
+      lh+=`<div class="dl dl-c"><span class="dn">${ln_l}</span><span class="dc">${esc(line.l)}&nbsp;</span></div>`;
+      rh+=`<div class="dl dl-c"><span class="dn">${ln_r}</span><span class="dc">${esc(line.r)}&nbsp;</span></div>`;
+    }else if(line.t==='d'){
+      ln_l++;
+      lh+=`<div class="dl dl-d"><span class="dn">${ln_l}</span><span class="dc">${esc(line.l)}&nbsp;</span></div>`;
+      rh+=`<div class="dl dl-e"><span class="dn"></span><span class="dc">—</span></div>`;
+    }else if(line.t==='a'){
+      ln_r++;
+      lh+=`<div class="dl dl-e"><span class="dn"></span><span class="dc">—</span></div>`;
+      rh+=`<div class="dl dl-a"><span class="dn">${ln_r}</span><span class="dc">${esc(line.r)}&nbsp;</span></div>`;
+    }
+  });
+  ct.innerHTML=`
+    <div class="diff-grid">
+      <div class="diff-panel-w"><div class="diff-panel-h"><span class="df">${pair.from}</span> — копируем</div><div class="diff-body-w">${lh}</div></div>
+      <div class="diff-panel-w"><div class="diff-panel-h"><span class="dt">${pair.to}</span> — результат</div><div class="diff-body-w">${rh}</div></div>
+    </div>
+    <div class="diff-summary">${pair.summary}</div>`;
+}
+
+initDiff();
+
+// ════════════════════════════════════════════════════
+//  GAME 3: «Что изменить?» — показывает строку из ProductList,
+//  нужно выбрать: оставить / заменить / удалить для OrderList
+// ════════════════════════════════════════════════════
+function switchGameMode(mode) {
+  ['game-fill','game-sort','game-whatchange','game-guess'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = 'none';
+  });
+  const map = {fill:'game-fill',sort:'game-sort',whatchange:'game-whatchange',guess:'game-guess'};
+  const el = document.getElementById(map[mode]);
+  if(el) el.style.display = 'block';
+  const tabs = document.querySelectorAll('#sec-game .tab-btn');
+  tabs.forEach(t => t.classList.remove('active'));
+  const idx = {fill:0,sort:1,whatchange:2,guess:3}[mode];
+  if(idx!==undefined && tabs[idx]) tabs[idx].classList.add('active');
+}
+
+
+
+// ════════════════════════════════════════════════════
+//  GAME 3 LOGIC: «Что изменить?»
+// ════════════════════════════════════════════════════
+const WC_DATA = [];
+// Build question pool from DIFF_PAIRS
+DIFF_PAIRS.forEach(pair => {
+  pair.lines.forEach(line => {
+    const text = line.l || line.r || '';
+    if (text.length < 10 || text.trim() === '') return;
+    let correct, detail;
+    if (line.t === 'k') { correct = 'keep'; detail = 'Без изменений — эта строка одинаковая'; }
+    else if (line.t === 'c') { correct = 'change'; detail = 'Заменить: ' + (line.r||'').substring(0,60) + '...'; }
+    else if (line.t === 'd') { correct = 'delete'; detail = 'Удалить — в заказах этого нет'; }
+    else if (line.t === 'a') { correct = 'add'; detail = 'Добавить — это новое для заказов'; return; } // skip "add" — no source line
+    else return;
+    WC_DATA.push({ text, correct, detail, pair: pair.title });
+  });
+});
+
+let wcScore=0, wcTotal=0, wcQueue=[];
+
+function startWhatChange() {
+  wcScore=0; wcTotal=0;
+  document.getElementById('wc-score').textContent='';
+  document.getElementById('wc-result').className='game-result';
+  // Pick 10 random questions
+  const shuffled = [...WC_DATA].sort(()=>Math.random()-.5);
+  wcQueue = shuffled.slice(0, 10);
+  showWcQuestion(0);
+}
+
+function showWcQuestion(idx) {
+  const area = document.getElementById('wc-area');
+  if (idx >= wcQueue.length) {
+    const res = document.getElementById('wc-result');
+    if (wcScore === wcTotal) {
+      res.className = 'game-result show success';
+      res.textContent = '🎉 Идеально! ' + wcScore + '/' + wcTotal;
+    } else {
+      res.className = 'game-result show fail';
+      res.textContent = '✗ ' + wcScore + '/' + wcTotal + ' правильных';
+    }
+    area.innerHTML = '';
+    return;
+  }
+  const q = wcQueue[idx];
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  document.getElementById('wc-score').textContent = (idx+1) + ' / ' + wcQueue.length;
+
+  area.innerHTML = `
+    <div style="background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px">${esc(q.pair)}</div>
+      <code style="font-size:clamp(11px,2.5vw,13px);color:var(--text);line-height:1.6">${esc(q.text)}</code>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn-secondary" style="flex:1;min-width:100px;text-align:center;padding:12px" onclick="answerWc(${idx},'keep',this)">✓ Оставить</button>
+      <button class="btn-secondary" style="flex:1;min-width:100px;text-align:center;padding:12px;border-color:#ffb84f;color:#ffb84f" onclick="answerWc(${idx},'change',this)">✎ Заменить</button>
+      <button class="btn-secondary" style="flex:1;min-width:100px;text-align:center;padding:12px;border-color:#ff4f6b;color:#ff4f6b" onclick="answerWc(${idx},'delete',this)">✗ Удалить</button>
+    </div>
+    <div id="wc-feedback" style="margin-top:10px"></div>`;
+}
+
+function answerWc(idx, answer, btn) {
+  const q = wcQueue[idx];
+  wcTotal++;
+  const fb = document.getElementById('wc-feedback');
+  const buttons = btn.parentElement.querySelectorAll('button');
+  buttons.forEach(b => b.disabled = true);
+
+  if (answer === q.correct) {
+    wcScore++;
+    btn.style.background = 'rgba(0,250,154,.15)';
+    btn.style.borderColor = '#00fa9a';
+    fb.innerHTML = '<span style="color:#00fa9a;font-size:12px">✓ Верно!</span>';
+  } else {
+    btn.style.background = 'rgba(255,79,107,.15)';
+    btn.style.borderColor = '#ff4f6b';
+    const labels = {keep:'Оставить',change:'Заменить',delete:'Удалить'};
+    fb.innerHTML = '<span style="color:#ff4f6b;font-size:12px">✗ Нет — правильно: <b>' + labels[q.correct] + '</b></span><br><span style="color:var(--muted);font-size:11px">' + q.detail + '</span>';
+  }
+
+  setTimeout(() => showWcQuestion(idx + 1), 1500);
+}
+
+
+
+// ════════════════════════════════════════════════════
+//  GAME 4: «Угадай файл» — показывает строку, нужно выбрать файл
+// ════════════════════════════════════════════════════
+const GUESS_POOL = [];
+const guessAutoGen = [
+  /^\s*using\s/,
+  /^\s*namespace\s/,
+  /^\s*\{[\s]*$/,
+  /^\s*\}[\s]*$/,
+  /^\s*\/\//,
+  /^\s*$/,
+  /InitializeComponent/,
+  /Application\.EnableVisualStyles/,
+  /Application\.SetCompatibleTextRenderingDefault/,
+  /^\s*\[STAThread\]/,
+  /static void Main/,
+  /public partial class/,
+  /internal static class/,
+  /private void \w+_(?:Click|Load|Changed|Closed|Selected)\(object sender/,
+  /public \w+\([^)]*\)\s*\{/,
+  /^\s*try\s*$/,
+  /^\s*catch\s/,
+  /DialogResult\s*=\s*DialogResult/,
+  /MessageBox\.Show/,
+  /\.Close\(\)/,
+];
+
+// Build pool — unique meaningful lines per file
+FILES.forEach(f => {
+  const lines = f.code.split('\n');
+  lines.forEach(line => {
+    const t = line.trim();
+    if (t.length < 20) return;
+    if (guessAutoGen.some(re => re.test(line))) return;
+    // Skip very generic lines
+    if (/^\s*\}\s*$/.test(t) || /^\s*\{\s*$/.test(t)) return;
+    GUESS_POOL.push({ text: t, file: f.name });
+  });
+});
+
+let guessQueue=[], guessScore=0, guessTotal=0;
+
+function startGuess() {
+  guessScore=0; guessTotal=0;
+  document.getElementById('guess-score').textContent = '';
+  document.getElementById('guess-result').className = 'game-result';
+  // Pick 10 random from pool, try to get variety of files
+  const shuffled = [...GUESS_POOL].sort(() => Math.random() - .5);
+  const picked = [];
+  const usedFiles = {};
+  for (const q of shuffled) {
+    if (picked.length >= 10) break;
+    if ((usedFiles[q.file] || 0) >= 2) continue; // max 2 per file
+    picked.push(q);
+    usedFiles[q.file] = (usedFiles[q.file] || 0) + 1;
+  }
+  guessQueue = picked;
+  showGuessQuestion(0);
+}
+
+function showGuessQuestion(idx) {
+  const area = document.getElementById('guess-area');
+  if (idx >= guessQueue.length) {
+    const res = document.getElementById('guess-result');
+    if (guessScore === guessTotal) {
+      res.className = 'game-result show success';
+      res.textContent = '🎉 Отлично! ' + guessScore + '/' + guessTotal + ' — знаешь код наизусть!';
+    } else {
+      res.className = 'game-result show fail';
+      res.textContent = '✗ ' + guessScore + '/' + guessTotal + ' правильных';
+    }
+    area.innerHTML = '';
+    return;
+  }
+  const q = guessQueue[idx];
+  const esc = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  document.getElementById('guess-score').textContent = (idx+1) + ' / ' + guessQueue.length;
+
+  // Get 4 options: correct + 3 random other files
+  const allFiles = [...new Set(FILES.map(f=>f.name))];
+  const others = allFiles.filter(f => f !== q.file).sort(() => Math.random()-.5).slice(0,3);
+  const options = [q.file, ...others].sort(() => Math.random()-.5);
+
+  area.innerHTML = `
+    <div style="background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px">Из какого файла эта строка?</div>
+      <code style="font-size:clamp(11px,2.5vw,13px);color:var(--text);line-height:1.6;word-break:break-all">${esc(q.text)}</code>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${options.map(o => `<button class="btn-secondary" style="text-align:center;padding:12px;font-size:12px" onclick="answerGuess(${idx},'${o}',this)">${o}</button>`).join('')}
+    </div>
+    <div id="guess-feedback" style="margin-top:10px"></div>`;
+}
+
+function answerGuess(idx, answer, btn) {
+  const q = guessQueue[idx];
+  guessTotal++;
+  const fb = document.getElementById('guess-feedback');
+  const buttons = btn.parentElement.querySelectorAll('button');
+  buttons.forEach(b => b.disabled = true);
+
+  if (answer === q.file) {
+    guessScore++;
+    btn.style.background = 'rgba(0,250,154,.15)';
+    btn.style.borderColor = '#00fa9a';
+    btn.style.color = '#00fa9a';
+    fb.innerHTML = '<span style="color:#00fa9a;font-size:12px">✓ Верно!</span>';
+  } else {
+    btn.style.background = 'rgba(255,79,107,.15)';
+    btn.style.borderColor = '#ff4f6b';
+    btn.style.color = '#ff4f6b';
+    // Highlight correct
+    buttons.forEach(b => {
+      if (b.textContent === q.file) {
+        b.style.background = 'rgba(0,250,154,.15)';
+        b.style.borderColor = '#00fa9a';
+        b.style.color = '#00fa9a';
+      }
+    });
+    fb.innerHTML = '<span style="color:#ff4f6b;font-size:12px">✗ Нет — это <b>' + q.file + '</b></span>';
+  }
+
+  setTimeout(() => showGuessQuestion(idx + 1), 1400);
+}
 </script>
 </body>
 </html>
