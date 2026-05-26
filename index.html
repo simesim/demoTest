@@ -679,6 +679,7 @@
     <button class="tab-btn" onclick="showSetupTab('orderlist')">📦 OrderList</button>
     <button class="tab-btn" onclick="showSetupTab('ordercard')">🗂️ UcOrderCard</button>
     <button class="tab-btn" onclick="showSetupTab('orderedit')">📝 OrderEdit</button>
+    <button class="tab-btn" onclick="showSetupTab('exam_strategy')">🚀 Стратегия</button>
     <button class="tab-btn" onclick="showSetupTab('dataset')">🔗 DataSet</button>
   </div>
 
@@ -2913,6 +2914,100 @@ const SETUP_TABS = {
           ['Форма', 'Load', 'OrderEdit_Load'],
           ['btnSave', 'Click', 'btnSave_Click'],
           ['btnCancel', 'Click', 'btnCancel_Click'],
+        ]
+      },
+    ]
+  },
+  exam_strategy: {
+    title: '🚀 Стратегия на экзамене — порядок действий',
+    blocks: [
+      {
+        title: '0. Главное правило',
+        type: 'steps',
+        items: [
+          'Меньше кода, больше кликов — всё что можно сделать мышкой, делай мышкой',
+          'Проверяй после каждого блока — не жди конца, запускай и смотри',
+          'Если застряла больше 5 минут — пропусти, вернись в конце',
+        ]
+      },
+      {
+        title: 'Блок 1 (50 мин): БД + все формы + DataSet',
+        type: 'steps',
+        items: [
+          'SSMS: создать базу obuvDB, все 11 таблиц, FK, импорт данных',
+          'VS: создать проект ObuvApp (Windows Forms, .NET Framework)',
+          'Добавить все формы: Login (Form), MainForm (Form), ProductEdit (Form), OrderEdit (Form)',
+          'Добавить все UserControl: ProductList, ProductCard, OrderList, UcOrderCard',
+          'НА КАЖДОЙ ФОРМЕ расставить элементы и настроить свойства (имена, Dock, BackColor)',
+          'Подключить Data Sources: перетащить из Server Explorer → добавить DataSet',
+          'Добавить ВСЕ запросы в DataSet: GetDataByLogPass, CountProductInOrders, DeleteById (Products), DeteteItemsByOrderId (Orders), DeleteById (Orders)',
+        ]
+      },
+      {
+        title: 'ВАЖНО: конструкторы ДО написания кода',
+        type: 'steps',
+        items: [
+          'Прежде чем писать Login и MainForm — впиши конструкторы во все 6 файлов',
+          'Иначе MainForm не скомпилируется, потому что вызывает new ProductList(roleName)',
+          'ProductList.cs и OrderList.cs: private readonly string roleName; + конструктор с roleName',
+          'ProductEdit.cs: private readonly int? productId; + конструктор с int? id',
+          'OrderEdit.cs: private readonly int? orderId; + конструктор с int? id',
+          'ProductCard.cs и UcOrderCard.cs: конструктор по умолчанию (VS создаёт сам)',
+          'Это 3 строки в каждом файле — 2 минуты работы',
+        ]
+      },
+      {
+        title: 'Блок 2 (15 мин): Login + MainForm → ЗАПУСК',
+        type: 'steps',
+        items: [
+          'Login.cs: Login_Load (1 строка Fill), btnEnter_Click (запрос + проверка), btnGuest_Click (1 строка), OpenMain (5 строк)',
+          'MainForm.cs: конструктор (сохранить fullName, roleName), Load (показать имя, скрыть кнопки, создать ProductList), ShowPage, btnOrders, btnBack, btnExit',
+          'Ctrl+F5 — ЗАПУСК. Проверь: вход по логину работает, гость работает, имя отображается',
+          'Если работает — фундамент готов, дальше проще',
+        ]
+      },
+      {
+        title: 'Блок 3 (30 мин): Товары → ЗАПУСК',
+        type: 'steps',
+        items: [
+          'ProductCard.cs: SetData — заполнить лейблы, цена со скидкой, цвет фона, загрузка фото',
+          'ProductList.cs: Load (права, Fill, BindingSource), FillSuppliersCombo, RenderCards, Card_CardClicked, ViewChanged, btnDel_Click, OpenEdit',
+          'ProductEdit.cs: Load (Fill справочников, Find или AddNew), ShowPhoto, btnChoosePhoto, btnSave (валидация, фото через GUID, EndEdit, Update)',
+          'Ctrl+F5 — ЗАПУСК. Проверь: карточки видны, поиск работает, добавление/редактирование работает',
+        ]
+      },
+      {
+        title: 'Блок 4 (15 мин): Заказы = копипаст товаров → ЗАПУСК',
+        type: 'steps',
+        items: [
+          'Скопируй код ProductList → OrderList. Удали: IsManager, FillSuppliersCombo, ViewChanged, CountProductInOrders. Добавь: GetAddress, DeteteItemsByOrderId. Замени имена: product→order',
+          'Скопируй ProductCard → UcOrderCard. Удали всю начинку SetData. Добавь: артикулы, статус, адрес, даты. Скелет тот же',
+          'Скопируй ProductEdit → OrderEdit. Удали всё про фото. Замени справочники. Добавь проверку дат',
+          'Ctrl+F5 — ЗАПУСК. Проверь: заказы отображаются, редактирование работает',
+          'Пользуйся разделом Сравнение на сайте — там цветами показано что менять',
+        ]
+      },
+      {
+        title: 'Блок 5 (40 мин): Документация',
+        type: 'steps',
+        items: [
+          'Блок-схема в draw.io: 13 блоков, экспорт в PDF',
+          'ER-диаграмма: в SSMS → Диаграммы БД → добавить все таблицы → сохранить → печать в PDF',
+          'SQL-скрипт: ПКМ по базе → Задачи → Создать скрипты',
+          'Docx: скриншоты интерфейса, описание работы',
+        ]
+      },
+      {
+        title: 'Распределение времени (итого ~2.5 часа)',
+        type: 'table',
+        headers: ['Блок', 'Время', 'Что делаем', 'Проверка'],
+        rows: [
+          ['1', '50 мин', 'БД + формы + DataSet', 'Таблицы и данные в SSMS'],
+          ['2', '15 мин', 'Login + MainForm', 'Вход работает'],
+          ['3', '30 мин', 'Товары (3 файла)', 'Карточки + CRUD'],
+          ['4', '15 мин', 'Заказы (копипаст)', 'Заказы работают'],
+          ['5', '40 мин', 'Документация', 'PDF-файлы сохранены'],
+          ['Запас', '1.5 часа', 'Отладка, исправления', ''],
         ]
       },
     ]
