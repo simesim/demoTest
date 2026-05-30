@@ -1005,7 +1005,7 @@ namespace ObuvApp
             string q = tbSearch.Text.Trim().Replace("'", "''");
 
             if (q.Length > 0)
-                filter = "ProductName LIKE '%" + q + "%'";
+                filter = "SearchText LIKE '%" + q + "%'";
 
             if (cbSupplier.SelectedIndex > 0)
             {
@@ -1101,7 +1101,7 @@ namespace ObuvApp
       [87,'string filter = "";','Начинаем с пустого фильтра'],
       [88,'string q = tbSearch.Text.Trim().Replace("\'", "\'\'" );','Берём текст поиска, обрезаем пробелы, экранируем кавычки'],
       [90,'if (q.Length > 0)','Если что-то введено в поиск'],
-      [91,'filter = "ProductName LIKE \'%" + q + "%\'";','LIKE %текст% — ищет подстроку в названии'],
+      [91,'filter = "SearchText LIKE \'%" + q + "%\'";','Поиск по вычисляемому столбцу SearchText (склейка всех текстовых полей в DataSet)'],
       [93,'if (cbSupplier.SelectedIndex > 0)','Если выбран конкретный поставщик (не \"Все\")'],
       [95,'if (filter.Length > 0) filter += " AND ";','Если уже есть условие — добавляем AND'],
       [96,'filter += "SupplierName = \'" + cbSupplier.Text + "\'";','Фильтр по точному имени поставщика'],
@@ -1246,6 +1246,7 @@ namespace ObuvApp
     code: `using System;
 using System.Data;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Forms;
 
@@ -1303,12 +1304,32 @@ namespace ObuvApp
             if (tbName.Text.Trim() == "") { MessageBox.Show("Укажите наименование"); return; }
             if (tbArticle.Text.Trim() == "") { MessageBox.Show("Укажите артикул"); return; }
 
+            if (!decimal.TryParse(tbPrice.Text, out decimal price) || price < 0)
+            { MessageBox.Show("Цена должна быть положительным числом"); return; }
+
+            if (!int.TryParse(tbStock.Text, out int qty) || qty < 0)
+            { MessageBox.Show("Количество не может быть отрицательным"); return; }
+
+            if (!int.TryParse(tbDiscount.Text, out int disc) || disc < 0 || disc > 100)
+            { MessageBox.Show("Скидка должна быть от 0 до 100"); return; }
+
             try
             {
+                var row = (DataRowView)productsBindingSource.Current;
                 if (pendingSource != null)
                 {
-                    var row = (DataRowView)productsBindingSource.Current;
-                    row["PhotoPath"] = pendingSource;
+                    var dir = Path.Combine(Application.StartupPath, "images");
+                    Directory.CreateDirectory(dir);
+                    var newPath = Path.Combine(dir, Guid.NewGuid().ToString("N") + ".png");
+
+                    using (var src = Image.FromFile(pendingSource))
+                    using (var bmp = new Bitmap(src, 300, 200))
+                        bmp.Save(newPath, ImageFormat.Png);
+
+                    var old = row["PhotoPath"].ToString();
+                    if (File.Exists(old)) File.Delete(old);
+
+                    row["PhotoPath"] = newPath;
                 }
                 productsBindingSource.EndEdit();
                 productsTableAdapter.Update(obuvDBDataSet.Products);
@@ -1324,23 +1345,35 @@ namespace ObuvApp
     annotations: [
       [1,'using System;','Базовые классы'],
       [2,'using System.Data;','DataRowView'],
-      [3,'using System.Drawing;','Image, Color'],
-      [4,'using System.IO;','File — проверка существования фото'],
-      [5,'using System.Windows.Forms;','Form, DialogResult и т.д.'],
-      [9,'public partial class ProductEdit : Form','Форма редактирования/добавления товара (модальная)'],
-      [11,'private readonly int? productId;','int? — nullable: null = добавление, число = редактирование'],
-      [12,'private string pendingSource;','Путь к выбранному новому фото (до сохранения)'],
-      [14,'public ProductEdit(int? id)','Конструктор: получаем id от ProductList'],
-      [20,'categoriesTableAdapter.Fill(obuvDBDataSet.Categories);','Заполняем справочники для комбобоксов'],
-      [26,'productsBindingSource.Position = productsBindingSource.Find("ProductId", productId.Value);','Находим нужный товар и перемещаем курсор'],
-      [32,'productsBindingSource.AddNew();','Создаём пустую строку для нового товара'],
-      [40,'var path = pendingSource ??','?? — если выбрали новое фото берём его путь, иначе из БД'],
-      [42,'pbPhoto.Image = File.Exists(path) ? Image.FromFile(path)','Если файл есть — загружаем, иначе заглушка'],
-      [53,'if (tbName.Text.Trim() == "")','Валидация: название не пустое'],
-      [59,'row["PhotoPath"] = pendingSource;','Просто записываем полный путь к фото в БД'],
-      [61,'productsBindingSource.EndEdit();','Применяем изменения в DataSet'],
-      [62,'productsTableAdapter.Update(obuvDBDataSet.Products);','Сохраняем в базу данных'],
-      [63,'DialogResult = DialogResult.OK;','Сигнал ProductList: сохранение успешно'],
+      [3,'using System.Drawing;','Image, Bitmap, Color'],
+      [4,'using System.Drawing.Imaging;','ImageFormat.Png — формат сохранения фото'],
+      [5,'using System.IO;','File, Path, Directory — работа с файлами'],
+      [6,'using System.Windows.Forms;','Form, DialogResult и т.д.'],
+      [10,'public partial class ProductEdit : Form','Форма редактирования/добавления товара (модальная)'],
+      [12,'private readonly int? productId;','int? — nullable: null = добавление, число = редактирование'],
+      [13,'private string pendingSource;','Путь к выбранному новому фото (до сохранения)'],
+      [15,'public ProductEdit(int? id)','Конструктор: получаем id от ProductList'],
+      [21,'categoriesTableAdapter.Fill(obuvDBDataSet.Categories);','Заполняем справочники для комбобоксов'],
+      [27,'productsBindingSource.Position = productsBindingSource.Find(...)','Находим нужный товар и перемещаем курсор'],
+      [33,'productsBindingSource.AddNew();','Создаём пустую строку для нового товара'],
+      [41,'var path = pendingSource ??','?? — если выбрали новое фото берём его путь, иначе из БД'],
+      [43,'pbPhoto.Image = File.Exists(path) ? Image.FromFile(path)','Если файл есть — загружаем, иначе заглушка'],
+      [54,'if (tbName.Text.Trim() == "")','Валидация: название не пустое'],
+      [57,'if (!decimal.TryParse(tbPrice.Text, out decimal price) || price < 0)','Цена: число и не отрицательная (требование задания)'],
+      [60,'if (!int.TryParse(tbStock.Text, out int qty) || qty < 0)','Количество: целое и не отрицательное (требование задания)'],
+      [63,'if (!int.TryParse(tbDiscount.Text, out int disc) || disc < 0 || disc > 100)','Скидка: 0–100']
+      [60,'var dir = Path.Combine(Application.StartupPath, "images");','Папка images рядом с exe'],
+      [61,'Directory.CreateDirectory(dir);','Создаём папку если её нет'],
+      [62,'var newPath = Path.Combine(dir, Guid.NewGuid()... + ".png");','Уникальное имя через GUID — исключает совпадения'],
+      [64,'using (var src = Image.FromFile(pendingSource))','using — освобождает ресурсы после блока'],
+      [65,'using (var bmp = new Bitmap(src, 300, 200))','Сжимаем до 300x200 (требование задания)'],
+      [66,'bmp.Save(newPath, ImageFormat.Png);','Сохраняем в папку приложения как PNG'],
+      [68,'var old = row["PhotoPath"].ToString();','Берём путь к старому фото'],
+      [69,'if (File.Exists(old)) File.Delete(old);','Удаляем старое фото (требование задания)'],
+      [71,'row["PhotoPath"] = newPath;','Записываем полный путь нового фото в БД'],
+      [73,'productsBindingSource.EndEdit();','Применяем изменения в DataSet'],
+      [74,'productsTableAdapter.Update(obuvDBDataSet.Products);','Сохраняем в базу данных'],
+      [75,'DialogResult = DialogResult.OK;','Сигнал ProductList: сохранение успешно'],
     ]
   },
   {
