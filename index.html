@@ -789,8 +789,9 @@ namespace ObuvApp
         {
             MainForm mf = new MainForm(fullName, roleName);
             Hide();
-            mf.FormClosed += (s, e) => { tbPass.Text = ""; Show(); };
-            mf.Show();
+            mf.ShowDialog();
+            tbPass.Text = "";
+            Show();
         }
     }
 }`,
@@ -818,8 +819,9 @@ namespace ObuvApp
       [45,'private void OpenMain(string fullName, string roleName)','Вспомогательный метод — открывает главное окно'],
       [47,'MainForm mf = new MainForm(fullName, roleName);','Создаём экземпляр MainForm, передаём имя и роль'],
       [48,'Hide();','Прячем Login (не Close — иначе приложение закроется!)'],
-      [49,'mf.FormClosed += (s, e) => { tbPass.Text = ""; Show(); };','Лямбда: когда MainForm закроется — очищаем пароль и показываем Login'],
-      [50,'mf.Show();','Показываем главное окно']
+      [49,'mf.ShowDialog();','ShowDialog останавливает код пока MainForm не закроется'],
+      [50,'tbPass.Text = "";','Очищаем пароль после закрытия MainForm'],
+      [51,'Show();','Показываем Login обратно']
     ]
   },
   {
@@ -922,7 +924,6 @@ namespace ObuvApp
     {
         private readonly string roleName;
         private bool IsAdmin;
-        private bool IsManager;
         private int selectedProductId;
 
         public ProductList(string roleName)
@@ -934,9 +935,8 @@ namespace ObuvApp
         private void ProductList_Load(object sender, EventArgs e)
         {
             IsAdmin = roleName == "Администратор";
-            IsManager = roleName == "Менеджер" || IsAdmin;
 
-            pnlTools.Visible = IsManager;
+            pnlTools.Visible = roleName == "Менеджер" || IsAdmin;
             btnAdd.Visible = IsAdmin;
             btnDel.Visible = IsAdmin;
 
@@ -969,16 +969,19 @@ namespace ObuvApp
         {
             pnlCards.Controls.Clear();
             int width = pnlCards.ClientSize.Width - pnlCards.Padding.Horizontal - 20;
+            int y = 10;
 
             for (int i = 0; i < productsBindingSource.Count; i++)
             {
                 DataRowView row = (DataRowView)productsBindingSource[i];
                 ProductCard card = new ProductCard();
                 card.SetData(row);
+                card.Location = new Point(10, y);
                 card.Width = width;
-                card.Margin = new Padding(0, 0, 0, 8);
+                card.Height = 200;
                 card.CardClicked += Card_CardClicked;
                 pnlCards.Controls.Add(card);
+                y += 208;
             }
         }
 
@@ -1057,13 +1060,11 @@ namespace ObuvApp
       [7,'public partial class ProductList : UserControl','UserControl — встраивается в панель MainForm, не отдельное окно'],
       [9,'private readonly string roleName;','Роль — для определения прав (что показывать/скрывать)'],
       [10,'private bool IsAdmin;','Флаг: true если Администратор'],
-      [11,'private bool IsManager;','Флаг: true если Менеджер ИЛИ Администратор'],
-      [12,'private int selectedProductId;','Id выбранного товара — для редактирования/удаления'],
+      [11,'private int selectedProductId;','Id выбранного товара — для редактирования/удаления'],
       [14,'public ProductList(string roleName)','Конструктор: получаем роль из MainForm'],
       [20,'private void ProductList_Load(object sender, EventArgs e)','При загрузке — настройка прав и загрузка данных'],
       [22,'IsAdmin = roleName == "Администратор";','Только администратор может добавлять/удалять'],
-      [23,'IsManager = roleName == "Менеджер" || IsAdmin;','Менеджер видит фильтры; Админ тоже (он \"старше\")'],
-      [25,'pnlTools.Visible = IsManager;','Панель поиска/фильтров скрыта для гостя и клиента'],
+      [24,'pnlTools.Visible = roleName == "Менеджер" || IsAdmin;','Инлайн: панель видна менеджеру и админу, скрыта для остальных'],
       [26,'btnAdd.Visible = IsAdmin;','Кнопка "Добавить" — только для админа'],
       [27,'btnDel.Visible = IsAdmin;','Кнопка "Удалить" — только для админа'],
       [31,'productsTableAdapter.Fill(obuvDBDataSet.Products);','Загружаем все товары из БД в DataSet'],
@@ -1184,16 +1185,12 @@ namespace ObuvApp
             Color bg = Color.White;
             if (stock == 0) bg = Color.LightSkyBlue;
             else if (discount > 15) bg = Color.MediumSpringGreen;
-            panelRoot.BackColor = bg;
-            panelInfo.BackColor = bg;
-            panelPhoto.BackColor = bg;
-            panelDiscount.BackColor = bg;
+            this.BackColor = bg;
 
-            string rel = row["PhotoPath"].ToString();
-            string full = Path.Combine(Application.StartupPath, rel);
+            string photo = row["PhotoPath"].ToString();
 
-            if (!string.IsNullOrEmpty(rel) && File.Exists(full))
-                productPic.Image = Image.FromStream(new MemoryStream(File.ReadAllBytes(full)));
+            if (!string.IsNullOrEmpty(photo) && File.Exists(photo))
+                productPic.Image = Image.FromFile(photo);
             else
                 productPic.Image = Properties.Resources.picture;
         }
@@ -1203,7 +1200,7 @@ namespace ObuvApp
       [1,'using System;','Базовые классы'],
       [2,'using System.Data;','DataRowView, DataRow и т.д.'],
       [3,'using System.Drawing;','Color, Image, Bitmap — для работы с графикой'],
-      [4,'using System.IO;','File, Path, MemoryStream — чтение/запись файлов'],
+      [4,'using System.IO;','File — проверка существования фото'],
       [5,'using System.Windows.Forms;','WinForms элементы'],
       [9,'public partial class ProductCard : UserControl','Карточка товара — встраивается в список'],
       [11,'public int ProductId { get; private set; }','Свойство: снаружи только чтение, внутри — запись'],
@@ -1237,15 +1234,11 @@ namespace ObuvApp
       [56,'Color bg = Color.White;','По умолчанию белый фон'],
       [57,'if (stock == 0) bg = Color.LightSkyBlue;','Нет на складе → голубой (приоритет выше)'],
       [58,'else if (discount > 15) bg = Color.MediumSpringGreen;','Скидка больше 15% → зелёный'],
-      [59,'panelRoot.BackColor = bg;','Устанавливаем фон корневой панели'],
-      [60,'panelInfo.BackColor = bg;','Фон панели с информацией'],
-      [61,'panelPhoto.BackColor = bg;','Фон панели с фото'],
-      [62,'panelDiscount.BackColor = bg;','Фон панели со скидкой'],
-      [64,'string rel = row["PhotoPath"].ToString();','Относительный путь к фото из БД'],
-      [65,'string full = Path.Combine(Application.StartupPath, rel);','Полный путь: папка приложения + относительный путь'],
-      [67,'if (!string.IsNullOrEmpty(rel) && File.Exists(full))','Если путь не пустой И файл существует'],
-      [68,'productPic.Image = Image.FromStream(new MemoryStream(File.ReadAllBytes(full)));','Загружаем через MemoryStream чтобы файл не блокировался'],
-      [70,'productPic.Image = Properties.Resources.picture;','Фото не найдено — показываем заглушку из ресурсов проекта']
+      [59,'this.BackColor = bg;','Задаём цвет всему UserControl — панели унаследуют'],
+      [61,'string photo = row["PhotoPath"].ToString();','Полный путь к фото из БД'],
+      [63,'if (!string.IsNullOrEmpty(photo) && File.Exists(photo))','Если путь не пустой И файл существует'],
+      [64,'productPic.Image = Image.FromFile(photo);','Загружаем фото по полному пути'],
+      [66,'productPic.Image = Properties.Resources.picture;','Фото не найдено — показываем заглушку из ресурсов']
     ]
   },
   {
@@ -1253,7 +1246,6 @@ namespace ObuvApp
     code: `using System;
 using System.Data;
 using System.Drawing;
-using System.Drawing.Imaging;
 using System.IO;
 using System.Windows.Forms;
 
@@ -1293,10 +1285,10 @@ namespace ObuvApp
 
         private void ShowPhoto()
         {
-            var rel = ((DataRowView)productsBindingSource.Current)["PhotoPath"].ToString();
-            var full = pendingSource ?? (rel == "" ? "" : Path.Combine(Application.StartupPath, rel));
-            pbPhoto.Image = File.Exists(full)
-                ? Image.FromStream(new MemoryStream(File.ReadAllBytes(full)))
+            var path = pendingSource ??
+                ((DataRowView)productsBindingSource.Current)["PhotoPath"].ToString();
+            pbPhoto.Image = File.Exists(path)
+                ? Image.FromFile(path)
                 : Properties.Resources.picture;
         }
 
@@ -1313,20 +1305,10 @@ namespace ObuvApp
 
             try
             {
-                var row = (DataRowView)productsBindingSource.Current;
                 if (pendingSource != null)
                 {
-                    var dir = Path.Combine(Application.StartupPath, "images");
-                    Directory.CreateDirectory(dir);
-                    var rel = "images\\\\" + Guid.NewGuid().ToString("N") + ".png";
-                    using (var src = Image.FromFile(pendingSource))
-                    using (var bmp = new Bitmap(src, 300, 200))
-                        bmp.Save(Path.Combine(Application.StartupPath, rel), ImageFormat.Png);
-
-                    var old = row["PhotoPath"].ToString();
-                    if (old != "" && File.Exists(Path.Combine(Application.StartupPath, old)))
-                        File.Delete(Path.Combine(Application.StartupPath, old));
-                    row["PhotoPath"] = rel;
+                    var row = (DataRowView)productsBindingSource.Current;
+                    row["PhotoPath"] = pendingSource;
                 }
                 productsBindingSource.EndEdit();
                 productsTableAdapter.Update(obuvDBDataSet.Products);
@@ -1342,55 +1324,23 @@ namespace ObuvApp
     annotations: [
       [1,'using System;','Базовые классы'],
       [2,'using System.Data;','DataRowView'],
-      [3,'using System.Drawing;','Image, Bitmap'],
-      [4,'using System.Drawing.Imaging;','ImageFormat.Png для сохранения'],
-      [5,'using System.IO;','File, Path, Directory — работа с файлами'],
-      [6,'using System.Windows.Forms;','Form, DialogResult и т.д.'],
-      [10,'public partial class ProductEdit : Form','Форма редактирования/добавления товара (модальная)'],
-      [12,'private readonly int? productId;','int? — nullable: null = добавление, число = редактирование'],
-      [13,'private string pendingSource;','Путь к выбранному новому фото (до сохранения)'],
-      [15,'public ProductEdit(int? id) { InitializeComponent(); productId = id; }','Конструктор в одну строку; сохраняем id'],
-      [17,'private void ProductEdit_Load(object sender, EventArgs e)','При открытии — загружаем все справочники'],
-      [21,'categoriesTableAdapter.Fill(obuvDBDataSet.Categories);','Загружаем категории для ComboBox'],
-      [22,'manufacturersTableAdapter.Fill(obuvDBDataSet.Manufacturers);','Производители для ComboBox'],
-      [23,'suppliersTableAdapter.Fill(obuvDBDataSet.Suppliers);','Поставщики для ComboBox'],
-      [24,'unitsTableAdapter.Fill(obuvDBDataSet.Units);','Единицы измерения для ComboBox'],
-      [25,'productsTableAdapter.Fill(obuvDBDataSet.Products);','Сами товары — для навигации к нужному'],
-      [27,'if (productId.HasValue)','HasValue = есть значение (не null) = редактирование'],
-      [29,'productsBindingSource.Position = productsBindingSource.Find("ProductId", productId.Value);','Находим товар по Id и ставим курсор на него — поля заполнятся'],
-      [30,'tbId.Visible = true;','Показываем поле Id (только для чтения)'],
-      [34,'productsBindingSource.AddNew();','Создаём пустую строку — поля пустые для заполнения'],
-      [35,'tbId.Visible = false;','Прячем Id — у нового товара его ещё нет'],
-      [37,'ShowPhoto();','Показываем текущее фото (или заглушку)'],
-      [42,'private void ShowPhoto()','Загрузка и показ фото товара'],
-      [44,'var rel = ((DataRowView)productsBindingSource.Current)["PhotoPath"].ToString();','Берём путь из текущей строки BindingSource'],
-      [45,'var full = pendingSource ?? (rel == "" ? "" : Path.Combine(Application.StartupPath, rel));','?? — если выбрали новое фото, берём его; иначе — из БД'],
-      [46,'pbPhoto.Image = File.Exists(full)','Тернарный оператор: файл есть?'],
-      [47,'? Image.FromStream(new MemoryStream(File.ReadAllBytes(full)))','Да — загружаем через MemoryStream'],
-      [48,': Properties.Resources.picture;','Нет — заглушка'],
-      [51,'private void btnChoosePhoto_Click(object sender, EventArgs e)','Клик по "Выбрать фото"'],
-      [53,'if (openFileDialog.ShowDialog() == DialogResult.OK)','Открываем диалог выбора файла'],
-      [54,'{ pendingSource = openFileDialog.FileName; ShowPhoto(); }','Сохраняем путь и обновляем превью'],
-      [57,'private void btnSave_Click(object sender, EventArgs e)','Клик по "Сохранить"'],
-      [59,'if (tbName.Text.Trim() == "") { MessageBox.Show("Укажите наименование"); return; }','Валидация: название обязательно'],
-      [60,'if (tbArticle.Text.Trim() == "") { MessageBox.Show("Укажите артикул"); return; }','Валидация: артикул обязателен'],
-      [64,'var row = (DataRowView)productsBindingSource.Current;','Текущая строка для записи пути фото'],
-      [65,'if (pendingSource != null)','Если выбрали новое фото'],
-      [67,'var dir = Path.Combine(Application.StartupPath, "images");','Папка для фото'],
-      [68,'Directory.CreateDirectory(dir);','Создаём папку если не существует'],
-      [69,'var rel = "images\\\\" + Guid.NewGuid().ToString("N") + ".png";','GUID — уникальное имя без дефисов + .png'],
-      [70,'using (var src = Image.FromFile(pendingSource))','using — автоосвобождение ресурса после блока'],
-      [71,'using (var bmp = new Bitmap(src, 300, 200))','Масштабируем до 300x200 пикселей'],
-      [72,'bmp.Save(Path.Combine(Application.StartupPath, rel), ImageFormat.Png);','Сохраняем как PNG'],
-      [74,'var old = row["PhotoPath"].ToString();','Старый путь к фото'],
-      [75,'if (old != "" && File.Exists(Path.Combine(Application.StartupPath, old)))','Если старое фото существует'],
-      [76,'File.Delete(Path.Combine(Application.StartupPath, old));','Удаляем старое фото — экономим место'],
-      [77,'row["PhotoPath"] = rel;','Записываем новый путь в строку DataSet'],
-      [79,'productsBindingSource.EndEdit();','Фиксируем изменения из контролов в DataSet'],
-      [80,'productsTableAdapter.Update(obuvDBDataSet.Products);','Отправляем все изменения в БД'],
-      [81,'DialogResult = DialogResult.OK;','Сигнал ProductList: сохранение успешно'],
-      [82,'Close();','Закрываем форму'],
-      [86,'private void btnCancel_Click(object sender, EventArgs e) { DialogResult = DialogResult.Cancel; Close(); }','Отмена — закрываем без сохранения']
+      [3,'using System.Drawing;','Image, Color'],
+      [4,'using System.IO;','File — проверка существования фото'],
+      [5,'using System.Windows.Forms;','Form, DialogResult и т.д.'],
+      [9,'public partial class ProductEdit : Form','Форма редактирования/добавления товара (модальная)'],
+      [11,'private readonly int? productId;','int? — nullable: null = добавление, число = редактирование'],
+      [12,'private string pendingSource;','Путь к выбранному новому фото (до сохранения)'],
+      [14,'public ProductEdit(int? id)','Конструктор: получаем id от ProductList'],
+      [20,'categoriesTableAdapter.Fill(obuvDBDataSet.Categories);','Заполняем справочники для комбобоксов'],
+      [26,'productsBindingSource.Position = productsBindingSource.Find("ProductId", productId.Value);','Находим нужный товар и перемещаем курсор'],
+      [32,'productsBindingSource.AddNew();','Создаём пустую строку для нового товара'],
+      [40,'var path = pendingSource ??','?? — если выбрали новое фото берём его путь, иначе из БД'],
+      [42,'pbPhoto.Image = File.Exists(path) ? Image.FromFile(path)','Если файл есть — загружаем, иначе заглушка'],
+      [53,'if (tbName.Text.Trim() == "")','Валидация: название не пустое'],
+      [59,'row["PhotoPath"] = pendingSource;','Просто записываем полный путь к фото в БД'],
+      [61,'productsBindingSource.EndEdit();','Применяем изменения в DataSet'],
+      [62,'productsTableAdapter.Update(obuvDBDataSet.Products);','Сохраняем в базу данных'],
+      [63,'DialogResult = DialogResult.OK;','Сигнал ProductList: сохранение успешно'],
     ]
   },
   {
@@ -2604,7 +2554,7 @@ const SETUP_TABS = {
       {
         title: '6. Загрузка фото',
         type: 'notice',
-        text: 'Путь из PhotoPath + Application.StartupPath. Если файл есть — грузим через MemoryStream (чтобы сразу освободить файл). Если нет — Resources.picture.'
+        text: 'PhotoPath содержит полный путь к фото. Если файл есть — грузим через Image.FromFile. Если нет — Resources.picture.'
       },
     ]
   },
@@ -2980,7 +2930,7 @@ const SETUP_TABS = {
         title: 'Блок 4 (15 мин): Заказы = копипаст товаров → ЗАПУСК',
         type: 'steps',
         items: [
-          'Скопируй код ProductList → OrderList. Удали: IsManager, FillSuppliersCombo, ViewChanged, CountProductInOrders. Добавь: GetAddress, DeteteItemsByOrderId. Замени имена: product→order',
+          'Скопируй код ProductList → OrderList. Удали: FillSuppliersCombo, ViewChanged, CountProductInOrders. Добавь: GetAddress, DeteteItemsByOrderId. Замени: pnlTools.Visible (убрать Менеджер), product→order',
           'Скопируй ProductCard → UcOrderCard. Удали всю начинку SetData. Добавь: артикулы, статус, адрес, даты. Скелет тот же',
           'Скопируй ProductEdit → OrderEdit. Удали всё про фото. Замени справочники. Добавь проверку дат',
           'Ctrl+F5 — ЗАПУСК. Проверь: заказы отображаются, редактирование работает',
@@ -3329,20 +3279,18 @@ initSortGame();
 // ════════════════════════════════════════════════════
 const DIFF_PAIRS=[
 {title:"ProductList → OrderList",from:"ProductList.cs",to:"OrderList.cs",
-summary:'<span class="tg tg-d">УДАЛИТЬ</span> IsManager, FillSuppliersCombo(), ViewChanged() (поиск/фильтр/сортировка), CountProductInOrders<br><span class="tg tg-a">ДОБАВИТЬ</span> GetAddress() для пунктов выдачи, DeteteItemsByOrderId<br><span class="tg tg-c">ЗАМЕНИТЬ</span> product→order, Products→Orders, suppliers→pickupPoints',
+summary:'<span class="tg tg-d">УДАЛИТЬ</span> FillSuppliersCombo(), ViewChanged() (поиск/фильтр/сортировка), CountProductInOrders<br><span class="tg tg-a">ДОБАВИТЬ</span> GetAddress() для пунктов выдачи, DeteteItemsByOrderId<br><span class="tg tg-c">ЗАМЕНИТЬ</span> product→order, pnlTools.Visible (убрать Менеджер)',
 lines:[
 {t:"k",l:"using System;"},{t:"k",l:"using System.Data;"},{t:"k",l:"using System.Windows.Forms;"},{t:"k",l:""},{t:"k",l:"namespace ObuvApp"},{t:"k",l:"{"},
 {t:"c",l:"    public partial class ProductList : UserControl",r:"    public partial class OrderList : UserControl"},
 {t:"k",l:"    {"},{t:"k",l:"        private readonly string roleName;"},{t:"k",l:"        private bool IsAdmin;"},
-{t:"d",l:"        private bool IsManager;"},
 {t:"c",l:"        private int selectedProductId;",r:"        private int selectedOrderId;"},
 {t:"k",l:""},{t:"c",l:"        public ProductList(string roleName)",r:"        public OrderList(string roleName)"},
 {t:"k",l:"        {"},{t:"k",l:"            InitializeComponent();"},{t:"k",l:"            this.roleName = roleName;"},{t:"k",l:"        }"},{t:"k",l:""},
 {t:"c",l:"        private void ProductList_Load(...)",r:"        private void OrderList_Load(...)"},
 {t:"k",l:"        {"},{t:"k",l:"            IsAdmin = roleName == \"Администратор\";"},
-{t:"d",l:"            IsManager = roleName == \"Менеджер\" || IsAdmin;"},
-{t:"c",l:"            pnlTools.Visible = IsManager;",r:"            pnlTools.Visible = IsAdmin;"},
-{t:"d",l:"            btnAdd.Visible = IsAdmin;"},{t:"d",l:"            btnDel.Visible = IsAdmin;"},
+{t:"c",l:"            pnlTools.Visible = roleName == \"Менеджер\" || IsAdmin;",r:"            pnlTools.Visible = IsAdmin;"},
+{t:"k",l:"            btnAdd.Visible = IsAdmin;"},{t:"k",l:"            btnDel.Visible = IsAdmin;"},
 {t:"k",l:"            try"},{t:"k",l:"            {"},
 {t:"c",l:"                productsTA.Fill(ds.Products);",r:"                ordersTA.Fill(ds.Orders);"},
 {t:"c",l:"                suppliersTA.Fill(ds.Suppliers);",r:"                pickupPointsTA.Fill(ds.PickupPoints);"},
@@ -3381,7 +3329,7 @@ lines:[
 {title:"ProductCard → UcOrderCard",from:"ProductCard.cs",to:"UcOrderCard.cs",
 summary:'<span class="tg tg-d">УДАЛИТЬ</span> Всё про товар: цена, скидка, цвет, фото, using Drawing/IO (30+ строк)<br><span class="tg tg-a">ДОБАВИТЬ</span> 5 строк: артикулы, статус, адрес, даты<br><span class="tg tg-c">СКЕЛЕТ</span> Id, CardClicked, Invoke, SetData — одинаковый',
 lines:[
-{t:"k",l:"using System; using System.Data;"},{t:"d",l:"using System.Drawing; using System.IO;"},
+{t:"k",l:"using System; using System.Data;"},{t:"d",l:"using System.Drawing;"},{t:"k",l:"using System.IO;"},
 {t:"k",l:"using System.Windows.Forms;"},{t:"k",l:""},
 {t:"c",l:"    public partial class ProductCard : UserControl",r:"    public partial class UcOrderCard : UserControl"},
 {t:"c",l:"        public int ProductId { get; private set; }",r:"        public int OrderId { get; private set; }"},
@@ -3398,8 +3346,8 @@ lines:[
 {t:"d",l:"            lblDescription, lblMan, lblSup, lblUnit, lblStock"},
 {t:"d",l:"            if (discount > 0) { finalPrice, lblPriceOld... }"},
 {t:"d",l:"            else { lblPriceNew, lblDiscount... }"},
-{t:"d",l:"            Color bg = ...; panelRoot.BackColor = bg; ..."},
-{t:"d",l:"            string rel = row[\"PhotoPath\"]...; productPic.Image = ..."},
+{t:"d",l:"            Color bg = ...; this.BackColor = bg;"},
+{t:"d",l:"            string photo = row[\"PhotoPath\"]...; Image.FromFile(photo);"},
 {t:"k",l:""},
 {t:"a",r:"            lblArticle.Text = row[\"OrderActicle\"].ToString();"},
 {t:"a",r:"            lblStatus.Text = \"Статус: \" + row[\"StatusName\"];"},
@@ -3409,10 +3357,10 @@ lines:[
 {t:"k",l:"        }"},{t:"k",l:"    }"},{t:"k",l:"}"},
 ]},
 {title:"ProductEdit → OrderEdit",from:"ProductEdit.cs",to:"OrderEdit.cs",
-summary:'<span class="tg tg-d">УДАЛИТЬ</span> Всё про фото: ShowPhoto, btnChoosePhoto, pendingSource, сохранение файла, using Drawing/IO<br><span class="tg tg-a">ДОБАВИТЬ</span> Проверку дат (dtpDeliv < dtpOrder)<br><span class="tg tg-c">ЗАМЕНИТЬ</span> 5 справочников → 3, products→orders',
+summary:'<span class="tg tg-d">УДАЛИТЬ</span> Всё про фото: ShowPhoto, btnChoosePhoto, pendingSource, using IO<br><span class="tg tg-a">ДОБАВИТЬ</span> Проверку дат (dtpDeliv < dtpOrder)<br><span class="tg tg-c">ЗАМЕНИТЬ</span> 5 справочников → 3, products→orders',
 lines:[
 {t:"k",l:"using System; using System.Data;"},
-{t:"d",l:"using System.Drawing; using System.Drawing.Imaging;"},{t:"d",l:"using System.IO;"},
+{t:"k",l:"using System.Drawing;"},{t:"d",l:"using System.IO;"},
 {t:"k",l:"using System.Windows.Forms;"},{t:"k",l:""},
 {t:"c",l:"    public partial class ProductEdit : Form",r:"    public partial class OrderEdit : Form"},
 {t:"c",l:"        private readonly int? productId;",r:"        private readonly int? orderId;"},
@@ -3438,7 +3386,7 @@ lines:[
 {t:"d",l:"            if (tbArticle.Text.Trim() == \"\") { ... }"},
 {t:"a",r:"            if (dtpDeliv.Value < dtpOrder.Value) { ... }"},
 {t:"k",l:"            try"},{t:"k",l:"            {"},
-{t:"d",l:"                var row = ...; if (pendingSource != null) {"},{t:"d",l:"                    // 10 строк: создание папки, GUID, сохранение фото"},{t:"d",l:"                }"},
+{t:"d",l:"                if (pendingSource != null) {"},{t:"d",l:"                    row[\"PhotoPath\"] = pendingSource;"},{t:"d",l:"                }"},
 {t:"c",l:"                productsBs.EndEdit();",r:"                ordersBs.EndEdit();"},
 {t:"c",l:"                productsTA.Update(ds.Products);",r:"                ordersTA.Update(ds.Orders);"},
 {t:"k",l:"                DialogResult = DialogResult.OK;"},{t:"k",l:"                Close();"},
